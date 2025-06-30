@@ -1,12 +1,14 @@
+
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8" />
-    <title>Gmail Viewer del Padrone - UTF8 & Emoji Perfetti</title>
+    <meta charset="UTF-8">
+    <title>Gmail Viewer del Padrone</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #0b541d;
+            background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
         }
@@ -51,6 +53,7 @@
 
     <h1>Gmail Viewer del Padrone</h1>
 
+    <!-- Bottone Google -->
     <div id="g_id_onload"
          data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
          data-context="signin"
@@ -67,239 +70,205 @@
          data-size="large">
     </div>
 
+    <!-- Pulsanti aggiuntivi -->
     <div>
         <button id="signout_button" style="display:none;">Disconnettiti</button>
     </div>
 
     <div id="content"></div>
 
+    <!-- Librerie -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
-const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com';
-const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
-const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
-const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
+    const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
+    const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
+    const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
 
-let tokenClient;
-let gapiInited = false;
-let gisInited = false;
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
 
-const signoutButton = document.getElementById('signout_button');
-const content = document.getElementById('content');
+    const signoutButton = document.getElementById('signout_button');
+    const content = document.getElementById('content');
 
-let nextPageToken = null;
-let isLoading = false;
-let allMessages = [];
-
-function gapiLoaded() {
-    gapi.load('client', initializeGapiClient);
-}
-
-async function initializeGapiClient() {
-    await gapi.client.init({
-        apiKey: API_KEY,
-        discoveryDocs: [DISCOVERY_DOC],
-    });
-    gapiInited = true;
-    maybeEnableButtons();
-}
-
-function gisLoaded() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: '',
-    });
-    gisInited = true;
-    maybeEnableButtons();
-}
-
-function maybeEnableButtons() {
-    if (gapiInited && gisInited) {
-        // Pronto per il login
+    function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
     }
-}
 
-function handleCredentialResponse(response) {
-    tokenClient.callback = async (resp) => {
-        if (resp.error !== undefined) {
-            throw(resp);
+    async function initializeGapiClient() {
+        await gapi.client.init({
+            apiKey: API_KEY,
+            discoveryDocs: [DISCOVERY_DOC],
+        });
+        gapiInited = true;
+        maybeEnableButtons();
+    }
+
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: '',
+        });
+        gisInited = true;
+        maybeEnableButtons();
+    }
+
+    function maybeEnableButtons() {
+        if (gapiInited && gisInited) {
+            // Pronto per il login
         }
-        signoutButton.style.display = 'block';
-        // Reset variabili per nuovo login
-        allMessages = [];
-        nextPageToken = null;
-        content.innerHTML = '';
-        await loadNextBatch();
-        window.addEventListener('scroll', handleScroll);
+    }
+
+    function handleCredentialResponse(response) {
+        tokenClient.callback = async (resp) => {
+            if (resp.error !== undefined) {
+                throw(resp);
+            }
+            signoutButton.style.display = 'block';
+            await listMessages();
+        };
+
+        if (gapi.client.getToken() === null) {
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        } else {
+            tokenClient.requestAccessToken({prompt: ''});
+        }
+    }
+
+    signoutButton.onclick = () => {
+        const token = gapi.client.getToken();
+        if (token !== null) {
+            google.accounts.oauth2.revoke(token.access_token);
+            gapi.client.setToken('');
+            content.innerHTML = '';
+            signoutButton.style.display = 'none';
+        }
     };
 
-    if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({prompt: 'consent'});
-    } else {
-        tokenClient.requestAccessToken({prompt: ''});
-    }
-}
+    async function listMessages() {
+        const res = await gapi.client.gmail.users.messages.list({
+            'userId': 'me',
+            'maxResults': 10
+        });
 
-signoutButton.onclick = () => {
-    const token = gapi.client.getToken();
-    if (token !== null) {
-        google.accounts.oauth2.revoke(token.access_token);
-        gapi.client.setToken('');
-        content.innerHTML = '';
-        signoutButton.style.display = 'none';
-        window.removeEventListener('scroll', handleScroll);
-        nextPageToken = null;
-        allMessages = [];
-    }
-};
+        if (!res.result.messages) {
+            content.innerHTML = 'Nessun messaggio trovato.';
+            return;
+        }
 
-// Funzione per decodifica base64 URL-safe → UTF-8
-function decodeBase64Url(base64) {
-    const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-    const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
-    const decoder = new TextDecoder('utf-8');
-    return decoder.decode(bytes);
-}
+        const output = [];
 
-async function loadNextBatch() {
-    if (isLoading) return;
-    isLoading = true;
-    content.insertAdjacentHTML('beforeend', `<div id="loading-spinner">Caricamento...</div>`);
-    // Chiedo solo 10 messaggi alla volta
-    const res = await gapi.client.gmail.users.messages.list({
-        'userId': 'me',
-        'maxResults': 10,
-        ...(nextPageToken ? { 'pageToken': nextPageToken } : {})
-    });
-    document.getElementById('loading-spinner').remove();
-
-    if (res.result.messages) {
-        allMessages = allMessages.concat(res.result.messages);
         for (const message of res.result.messages) {
-            await renderMessage(message);
+            const msg = await gapi.client.gmail.users.messages.get({
+                'userId': 'me',
+                'id': message.id
+            });
+
+            const headers = msg.result.payload.headers;
+            const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
+            const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
+
+            const {html, attachments} = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+
+            const divId = `email-${msg.result.id}`;
+
+            output.push(`
+                <div class="email" id="${divId}">
+                    <strong>Da:</strong> ${from}<br>
+                    <strong>Oggetto:</strong> ${subject}<br><br>
+                    <div class="email-body">${html}</div>
+                    <br>
+                    <button onclick="exportSingleToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
+                    <button onclick="exportSingleToPDF('${divId}', '${sanitizeFilename(subject)}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
+                </div>
+            `);
         }
+
+        content.innerHTML = output.join('');
     }
 
-    nextPageToken = res.result.nextPageToken || null;
+    function extractBodyAndAttachments(payload, messageId) {
+        let html = '';
+        const attachments = {};
 
-    if (!nextPageToken && allMessages.length === 0) {
-        content.innerHTML = 'Nessun messaggio trovato.';
-    }
-    isLoading = false;
-}
-
-async function renderMessage(message) {
-    const msg = await gapi.client.gmail.users.messages.get({
-        'userId': 'me',
-        'id': message.id
-    });
-    const headers = msg.result.payload.headers;
-    const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
-    const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
-    const {html, attachments} = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-    const divId = `email-${msg.result.id}`;
-    content.insertAdjacentHTML('beforeend', `
-        <div class="email" id="${divId}">
-            <strong>Da:</strong> ${from}<br>
-            <strong>Oggetto:</strong> ${subject}<br><br>
-            <div class="email-body">${html}</div>
-            <br>
-            <button onclick="exportSingleToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
-            <button onclick="exportSingleToPDF('${divId}', '${sanitizeFilename(subject)}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
-        </div>
-    `);
-}
-
-function extractBodyAndAttachments(payload, messageId) {
-    let html = '';
-    const attachments = {};
-
-    function traverse(parts) {
-        for (const part of parts) {
-            if (part.mimeType === 'text/html' && part.body?.data) {
-                html = decodeBase64Url(part.body.data);
-            } else if (part.mimeType && part.filename && part.body?.attachmentId) {
-                const contentId = part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value?.replace(/[<>]/g, '');
-                if (contentId) {
-                    attachments[contentId] = {
-                        attachmentId: part.body.attachmentId,
-                        mimeType: part.mimeType,
-                        messageId: messageId
-                    };
+        function traverse(parts) {
+            for (const part of parts) {
+                if (part.mimeType === 'text/html' && part.body?.data) {
+                    html = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+                } else if (part.mimeType && part.filename && part.body?.attachmentId) {
+                    const contentId = part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value?.replace(/[<>]/g, '');
+                    if (contentId) {
+                        attachments[contentId] = {
+                            attachmentId: part.body.attachmentId,
+                            mimeType: part.mimeType,
+                            messageId: messageId
+                        };
+                    }
+                } else if (part.parts) {
+                    traverse(part.parts);
                 }
-            } else if (part.parts) {
-                traverse(part.parts);
             }
         }
+
+        if (payload.parts) {
+            traverse(payload.parts);
+        } else if (payload.body?.data) {
+            html = atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+        }
+
+        return {html, attachments};
     }
 
-    if (payload.parts) {
-        traverse(payload.parts);
-    } else if (payload.body?.data) {
-        html = decodeBase64Url(payload.body.data);
+    function sanitizeFilename(name) {
+        return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     }
 
-    return {html, attachments};
-}
+    function exportSingleToHTML(divId, filename) {
+        const element = document.getElementById(divId);
+        const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>`;
+        const blob = new Blob([htmlContent], {type: "text/html"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${filename}.html`;
+        link.click();
+    }
 
-function sanitizeFilename(name) {
-    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-}
+    async function exportSingleToPDF(divId, filename, attachments) {
+        const element = document.getElementById(divId).querySelector('.email-body');
+        let cloned = element.cloneNode(true);
 
-function exportSingleToHTML(divId, filename) {
-    const element = document.getElementById(divId);
-    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>`;
-    const blob = new Blob([htmlContent], {type: "text/html"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${filename}.html`;
-    link.click();
-}
-
-async function exportSingleToPDF(divId, filename, attachments) {
-    const element = document.getElementById(divId).querySelector('.email-body');
-    let cloned = element.cloneNode(true);
-
-    const imgTags = cloned.querySelectorAll('img');
-    for (const img of imgTags) {
-        const src = img.getAttribute('src');
-        if (src?.startsWith('cid:')) {
-            const cid = src.replace('cid:', '');
-            if (attachments[cid]) {
-                const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
-                img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
+        const imgTags = cloned.querySelectorAll('img');
+        for (const img of imgTags) {
+            const src = img.getAttribute('src');
+            if (src?.startsWith('cid:')) {
+                const cid = src.replace('cid:', '');
+                if (attachments[cid]) {
+                    const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
+                    img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
+                }
             }
         }
+
+        html2pdf().from(cloned).save(`${filename}.pdf`);
     }
 
-    html2pdf().from(cloned).save(`${filename}.pdf`);
-}
-
-async function getAttachmentData(messageId, attachmentId) {
-    const res = await gapi.client.gmail.users.messages.attachments.get({
-        'userId': 'me',
-        'messageId': messageId,
-        'id': attachmentId
-    });
-    return res.result.data;
-}
-
-// Infinite scroll: carica altri batch quando sei in fondo
-function handleScroll() {
-    if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 100)) {
-        if (nextPageToken && !isLoading) {
-            loadNextBatch();
-        }
+    async function getAttachmentData(messageId, attachmentId) {
+        const res = await gapi.client.gmail.users.messages.attachments.get({
+            'userId': 'me',
+            'messageId': messageId,
+            'id': attachmentId
+        });
+        return res.result.data;
     }
-}
 
-window.gapiLoaded = gapiLoaded;
-window.gisLoaded = gisLoaded;
-</script>
+    window.gapiLoaded = gapiLoaded;
+    window.gisLoaded = gisLoaded;
+    </script>
 
     <!-- Caricamento librerie -->
     <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
