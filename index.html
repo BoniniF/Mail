@@ -6,7 +6,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #148735;
+            background-color: #5cbf96;
             margin: 0;
             padding: 20px;
         }
@@ -67,6 +67,13 @@
          data-size="large">
     </div>
 
+    <div id="bulk-actions" style="display:none; margin-bottom: 10px;">
+    <input type="checkbox" id="select_all" /> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
+    <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
+    <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
+    <button onclick="downloadSelectedEmails('pdf')">Scarica PDF selezionate</button>
+</div>
+
     <div>
         <button id="signout_button" style="display:none;">Disconnettiti</button>
     </div>
@@ -90,6 +97,74 @@
     const signoutButton = document.getElementById('signout_button');
     const content = document.getElementById('content');
 
+function onEmailCheckboxChange(checkbox) {
+    const id = checkbox.getAttribute('data-id');
+    if (checkbox.checked) {
+        selectedEmails.add(id);
+    } else {
+        selectedEmails.delete(id);
+    }
+    renderBulkActions();
+}
+
+document.getElementById('select_all').addEventListener('change', function () {
+    const checkboxes = content.querySelectorAll('.email-checkbox');
+    for (const cb of checkboxes) {
+        cb.checked = this.checked;
+        const id = cb.getAttribute('data-id');
+        if (this.checked) selectedEmails.add(id);
+        else selectedEmails.delete(id);
+    }
+    renderBulkActions();
+});
+
+function getSelectedEmailIds() {
+    return Array.from(selectedEmails);
+}
+
+        async function deleteSelectedEmails() {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    if (!confirm(`Eliminare definitivamente ${ids.length} email selezionate?`)) return;
+    for (const id of ids) {
+        try {
+            await gapi.client.gmail.users.messages.delete({'userId': 'me', 'id': id});
+            const emailDiv = document.getElementById(`email-${id}`);
+            if (emailDiv) emailDiv.remove();
+            selectedEmails.delete(id);
+        } catch (e) {
+            alert(`Errore su ${id}: ${e.message || e}`);
+        }
+    }
+    renderBulkActions();
+    alert('Email selezionate eliminate.');
+}
+window.deleteSelectedEmails = deleteSelectedEmails;
+
+        
+async function downloadSelectedEmails(type) {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    for (const id of ids) {
+        // Espandi la mail e scaricala
+        const container = document.getElementById(`email-${id}`);
+        if (container) {
+            const subject = container.querySelector('strong:nth-child(3)')?.innerText || 'email';
+            await expandEmail(id, sanitizeFilename(subject));
+            if (type === 'html') exportSingleToHTML('email-' + id, sanitizeFilename(subject));
+            if (type === 'pdf') exportSingleToPDF('email-' + id, sanitizeFilename(subject), {}); // attachments può essere migliorato
+        }
+    }
+}
+window.downloadSelectedEmails = downloadSelectedEmails;
+        
+        
 async function deleteEmail(messageId) {
     if (!confirm('Sei sicuro di voler eliminare definitivamente questa email?')) return;
     try {
@@ -175,6 +250,8 @@ window.deleteEmail = deleteEmail;
 async function listMessages() {
     let messages = [];
     let nextPageToken = null;
+    selectedEmails.clear(); // reset selezione ad ogni caricamento
+
     do {
         const res = await gapi.client.gmail.users.messages.list({
             'userId': 'me',
@@ -189,6 +266,7 @@ async function listMessages() {
 
     if (messages.length === 0) {
         content.innerHTML = 'Nessun messaggio trovato.';
+        renderBulkActions();
         return;
     }
 
@@ -207,6 +285,7 @@ async function listMessages() {
         const divId = `email-${msg.result.id}`;
         output.push(`
             <div class="email" id="${divId}">
+                <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
                 <strong>Da:</strong> ${from}<br>
                 <strong>Oggetto:</strong> ${subject}<br>
                 <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
@@ -216,6 +295,7 @@ async function listMessages() {
         `);
     }
     content.innerHTML = output.join('');
+    renderBulkActions();
 }
 
     // Carica e mostra il corpo solo al click su Espandi
