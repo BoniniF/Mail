@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8" />
-    <title>Gmail Viewer del Padrone - UTF8 & Emoji Perfetti</title>
+    <title>Gmail Viewer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -49,7 +49,7 @@
 </head>
 <body>
 
-    <h1>Gmail Viewer del Padrone</h1>
+    <h1>Gmail Viewer </h1>
 
     <div id="g_id_onload"
          data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
@@ -81,7 +81,7 @@
     const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com';
     const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
     const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
-    const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
+    const SCOPES = 'https://mail.google.com/';
 
     let tokenClient;
     let gapiInited = false;
@@ -90,6 +90,23 @@
     const signoutButton = document.getElementById('signout_button');
     const content = document.getElementById('content');
 
+async function deleteEmail(messageId) {
+    if (!confirm('Sei sicuro di voler eliminare definitivamente questa email?')) return;
+    try {
+        await gapi.client.gmail.users.messages.delete({
+            'userId': 'me',
+            'id': messageId
+        });
+        // Rimuovi la mail dalla UI
+        const emailDiv = document.getElementById(`email-${messageId}`);
+        if (emailDiv) emailDiv.remove();
+        alert('Email eliminata definitivamente.');
+    } catch (e) {
+        alert('Errore durante l\'eliminazione: ' + (e.message || e));
+    }
+}
+window.deleteEmail = deleteEmail;
+        
     function gapiLoaded() {
         gapi.load('client', initializeGapiClient);
     }
@@ -154,50 +171,52 @@
     }
 
     // *** VERSIONE SOLO OGGETTO E MITTENTE, ESPANDI PER CORPO ***
-    async function listMessages() {
-        let messages = [];
-        let nextPageToken = null;
-        do {
-            const res = await gapi.client.gmail.users.messages.list({
-                'userId': 'me',
-                'maxResults': 100,
-                'pageToken': nextPageToken
-            });
-            if (res.result.messages) {
-                messages = messages.concat(res.result.messages);
-            }
-            nextPageToken = res.result.nextPageToken;
-        } while (nextPageToken);
-
-        if (messages.length === 0) {
-            content.innerHTML = 'Nessun messaggio trovato.';
-            return;
+// Nuova versione di listMessages con bottone Elimina definitivo
+async function listMessages() {
+    let messages = [];
+    let nextPageToken = null;
+    do {
+        const res = await gapi.client.gmail.users.messages.list({
+            'userId': 'me',
+            'maxResults': 100,
+            'pageToken': nextPageToken
+        });
+        if (res.result.messages) {
+            messages = messages.concat(res.result.messages);
         }
+        nextPageToken = res.result.nextPageToken;
+    } while (nextPageToken);
 
-        const output = [];
-        for (const message of messages) {
-            // Carica solo le intestazioni per ora (metadata)
-            const msg = await gapi.client.gmail.users.messages.get({
-                'userId': 'me',
-                'id': message.id,
-                'format': 'metadata',
-                'metadataHeaders': ['Subject', 'From']
-            });
-            const headers = msg.result.payload.headers;
-            const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
-            const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
-            const divId = `email-${msg.result.id}`;
-            output.push(`
-                <div class="email" id="${divId}">
-                    <strong>Da:</strong> ${from}<br>
-                    <strong>Oggetto:</strong> ${subject}<br>
-                    <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
-                    <div class="email-body" style="display:none;"></div>
-                </div>
-            `);
-        }
-        content.innerHTML = output.join('');
+    if (messages.length === 0) {
+        content.innerHTML = 'Nessun messaggio trovato.';
+        return;
     }
+
+    const output = [];
+    for (const message of messages) {
+        // Carica solo le intestazioni per ora (metadata)
+        const msg = await gapi.client.gmail.users.messages.get({
+            'userId': 'me',
+            'id': message.id,
+            'format': 'metadata',
+            'metadataHeaders': ['Subject', 'From']
+        });
+        const headers = msg.result.payload.headers;
+        const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
+        const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
+        const divId = `email-${msg.result.id}`;
+        output.push(`
+            <div class="email" id="${divId}">
+                <strong>Da:</strong> ${from}<br>
+                <strong>Oggetto:</strong> ${subject}<br>
+                <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
+                <button onclick="deleteEmail('${msg.result.id}')">Elimina</button>
+                <div class="email-body" style="display:none;"></div>
+            </div>
+        `);
+    }
+    content.innerHTML = output.join('');
+}
 
     // Carica e mostra il corpo solo al click su Espandi
     async function expandEmail(messageId, filename) {
