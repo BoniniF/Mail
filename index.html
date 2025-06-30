@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <title>Gmail Viewer del Padrone</title>
+    <meta charset="UTF-8" />
+    <title>Gmail Viewer del Padrone - UTF8 & Emoji Perfetti</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,7 +51,6 @@
 
     <h1>Gmail Viewer del Padrone</h1>
 
-    <!-- Bottone Google -->
     <div id="g_id_onload"
          data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
          data-context="signin"
@@ -69,14 +67,12 @@
          data-size="large">
     </div>
 
-    <!-- Pulsanti aggiuntivi -->
     <div>
         <button id="signout_button" style="display:none;">Disconnettiti</button>
     </div>
 
     <div id="content"></div>
 
-    <!-- Librerie -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -149,6 +145,14 @@
         }
     };
 
+    // Funzione universale per decodifica base64 URL-safe → UTF-8 corretta
+    function decodeBase64Url(base64) {
+        const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+        const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
+        const decoder = new TextDecoder('utf-8');
+        return decoder.decode(bytes);
+    }
+
     async function listMessages() {
         const res = await gapi.client.gmail.users.messages.list({
             'userId': 'me',
@@ -198,7 +202,7 @@
         function traverse(parts) {
             for (const part of parts) {
                 if (part.mimeType === 'text/html' && part.body?.data) {
-                    html = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+                    html = decodeBase64Url(part.body.data);
                 } else if (part.mimeType && part.filename && part.body?.attachmentId) {
                     const contentId = part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value?.replace(/[<>]/g, '');
                     if (contentId) {
@@ -217,7 +221,7 @@
         if (payload.parts) {
             traverse(payload.parts);
         } else if (payload.body?.data) {
-            html = atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+            html = decodeBase64Url(payload.body.data);
         }
 
         return {html, attachments};
