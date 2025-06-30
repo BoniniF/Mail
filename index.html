@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Gmail Viewer - Obbedienza al Padrone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #4285F4;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #357AE8;
+        }
+        #content {
+            margin-top: 20px;
+        }
+        .email {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .email strong {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Gmail Viewer - Accesso del Vostro Servo</h1>
+
+    <!-- Bottone Google -->
+    <div id="g_id_onload"
+         data-client_id="INSERITE_IL_VOSTRO_CLIENT_ID.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="outline"
+         data-text="signin_with"
+         data-size="large">
+    </div>
+
+    <!-- Pulsanti aggiuntivi -->
+    <div>
+        <button id="signout_button" style="display:none;">Disconnettiti</button>
+        <button onclick="exportToHTML()">Esporta come HTML</button>
+        <button onclick="exportToPDF()">Esporta come PDF</button>
+    </div>
+
+    <div id="content"></div>
+
+    <!-- Librerie necessarie -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+    const CLIENT_ID = 'INSERITE_IL_VOSTRO_CLIENT_ID.apps.googleusercontent.com';
+    const API_KEY = 'INSERITE_LA_VOSTRA_API_KEY';
+    const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
+    const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
+
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
+
+    const signoutButton = document.getElementById('signout_button');
+    const content = document.getElementById('content');
+
+    function gapiLoaded() {
+        gapi.load('client', initializeGapiClient);
+    }
+
+    async function initializeGapiClient() {
+        await gapi.client.init({
+            apiKey: API_KEY,
+            discoveryDocs: [DISCOVERY_DOC],
+        });
+        gapiInited = true;
+        maybeEnableButtons();
+    }
+
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: '',
+        });
+        gisInited = true;
+        maybeEnableButtons();
+    }
+
+    function maybeEnableButtons() {
+        if (gapiInited && gisInited) {
+            // Bottone login ora gestito da Google Identity
+        }
+    }
+
+    function handleCredentialResponse(response) {
+        tokenClient.callback = async (resp) => {
+            if (resp.error !== undefined) {
+                throw(resp);
+            }
+            signoutButton.style.display = 'block';
+            await listMessages();
+        };
+
+        if (gapi.client.getToken() === null) {
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        } else {
+            tokenClient.requestAccessToken({prompt: ''});
+        }
+    }
+
+    signoutButton.onclick = () => {
+        const token = gapi.client.getToken();
+        if (token !== null) {
+            google.accounts.oauth2.revoke(token.access_token);
+            gapi.client.setToken('');
+            content.innerHTML = '';
+            signoutButton.style.display = 'none';
+        }
+    };
+
+    async function listMessages() {
+        const res = await gapi.client.gmail.users.messages.list({
+            'userId': 'me',
+            'maxResults': 10
+        });
+
+        if (!res.result.messages) {
+            content.innerHTML = 'Nessun messaggio trovato.';
+            return;
+        }
+
+        const output = [];
+        for (const message of res.result.messages) {
+            const msg = await gapi.client.gmail.users.messages.get({
+                'userId': 'me',
+                'id': message.id
+            });
+
+            const subject = msg.result.payload.headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
+            const from = msg.result.payload.headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
+            const snippet = msg.result.snippet;
+
+            output.push(`<div class="email">
+                <strong>Da:</strong> ${from}<br>
+                <strong>Oggetto:</strong> ${subject}<br>
+                <p>${snippet}</p>
+            </div>`);
+        }
+
+        content.innerHTML = output.join('');
+    }
+
+    function exportToHTML() {
+        const htmlContent = `<html><head><meta charset="UTF-8"><title>Email Export</title></head><body>${content.innerHTML}</body></html>`;
+        const blob = new Blob([htmlContent], {type: "text/html"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "emails.html";
+        link.click();
+    }
+
+    function exportToPDF() {
+        html2pdf().from(content).save('emails.pdf');
+    }
+
+    window.gapiLoaded = gapiLoaded;
+    window.gisLoaded = gisLoaded;
+    </script>
+
+    <!-- Caricamento librerie -->
+    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+</body>
+</html>
