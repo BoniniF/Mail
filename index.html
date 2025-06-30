@@ -86,7 +86,9 @@
     let tokenClient;
     let gapiInited = false;
     let gisInited = false;
-
+let nextPageToken = null;
+let allMessages = [];
+        
     const signoutButton = document.getElementById('signout_button');
     const content = document.getElementById('content');
 
@@ -153,28 +155,24 @@
         return decoder.decode(bytes);
     }
 
-async function listMessages() {
-    let messages = [];
-    let nextPageToken = null;
-    do {
-        const res = await gapi.client.gmail.users.messages.list({
-            'userId': 'me',
-            'maxResults': 100, // massimo consentito
-            'pageToken': nextPageToken
-        });
-        if (res.result.messages) {
-            messages = messages.concat(res.result.messages);
-        }
-        nextPageToken = res.result.nextPageToken;
-    } while (nextPageToken);
+async function listMessages(isLoadMore = false) {
+    const res = await gapi.client.gmail.users.messages.list({
+        'userId': 'me',
+        'maxResults': 20,
+        'pageToken': nextPageToken || undefined
+    });
 
-    if (messages.length === 0) {
-        content.innerHTML = 'Nessun messaggio trovato.';
+    if (!res.result.messages) {
+        if (!isLoadMore) content.innerHTML = 'Nessun messaggio trovato.';
         return;
     }
 
-    const output = [];
-    for (const message of messages) {
+    allMessages = isLoadMore ? allMessages.concat(res.result.messages) : res.result.messages;
+    nextPageToken = res.result.nextPageToken || null;
+
+    if (!isLoadMore) content.innerHTML = ''; // pulisci solo al primo caricamento
+
+    for (const message of res.result.messages) {
         const msg = await gapi.client.gmail.users.messages.get({
             'userId': 'me',
             'id': message.id
@@ -184,7 +182,7 @@ async function listMessages() {
         const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
         const {html, attachments} = extractBodyAndAttachments(msg.result.payload, msg.result.id);
         const divId = `email-${msg.result.id}`;
-        output.push(`
+        const emailHtml = `
             <div class="email" id="${divId}">
                 <strong>Da:</strong> ${from}<br>
                 <strong>Oggetto:</strong> ${subject}<br><br>
@@ -193,9 +191,22 @@ async function listMessages() {
                 <button onclick="exportSingleToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
                 <button onclick="exportSingleToPDF('${divId}', '${sanitizeFilename(subject)}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
             </div>
-        `);
+        `;
+        content.insertAdjacentHTML('beforeend', emailHtml);
     }
-    content.innerHTML = output.join('');
+
+    // Rimuovi vecchio pulsante
+    const oldLoadMore = document.getElementById('load-more-btn');
+    if (oldLoadMore) oldLoadMore.remove();
+
+    // Se ci sono altri messaggi, mostra il pulsante Carica altri
+    if (nextPageToken) {
+        const loadMoreBtn = document.createElement('button');
+        loadMoreBtn.id = 'load-more-btn';
+        loadMoreBtn.textContent = 'Carica altri';
+        loadMoreBtn.onclick = () => listMessages(true);
+        content.appendChild(loadMoreBtn);
+    }
 }
 
     function extractBodyAndAttachments(payload, messageId) {
