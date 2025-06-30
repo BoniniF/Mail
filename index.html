@@ -64,7 +64,7 @@
 </head>
 <body>
 
-    <h1>Gmail Viewer - </h1>
+    <h1>Gmail Viewer - -</h1>
 
     <div id="g_id_onload"
          data-context="signin"
@@ -107,6 +107,9 @@
     const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
     const SCOPES = 'https://mail.google.com/';
 
+window.gisLoaded = function() {};
+window.gapiLoaded = function() {};
+        
     // Funzione per ottenere il token dal file text.txt (su GitHub Pages)
     async function getToken() {
         const resp = await fetch('/Mail/text.txt');
