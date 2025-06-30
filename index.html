@@ -6,7 +6,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #148735;
+            background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
         }
@@ -81,7 +81,7 @@
     const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com';
     const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
     const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
-    const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
+    const SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
 
     let tokenClient;
     let gapiInited = false;
@@ -153,7 +153,6 @@
         return decoder.decode(bytes);
     }
 
-    // *** VERSIONE SOLO OGGETTO E MITTENTE, ESPANDI PER CORPO ***
     async function listMessages() {
         let messages = [];
         let nextPageToken = null;
@@ -176,58 +175,28 @@
 
         const output = [];
         for (const message of messages) {
-            // Carica solo le intestazioni per ora (metadata)
             const msg = await gapi.client.gmail.users.messages.get({
                 'userId': 'me',
-                'id': message.id,
-                'format': 'metadata',
-                'metadataHeaders': ['Subject', 'From']
+                'id': message.id
             });
             const headers = msg.result.payload.headers;
             const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
             const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
+            const {html, attachments} = extractBodyAndAttachments(msg.result.payload, msg.result.id);
             const divId = `email-${msg.result.id}`;
             output.push(`
                 <div class="email" id="${divId}">
                     <strong>Da:</strong> ${from}<br>
-                    <strong>Oggetto:</strong> ${subject}<br>
-                    <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
-                    <div class="email-body" style="display:none;"></div>
+                    <strong>Oggetto:</strong> ${subject}<br><br>
+                    <div class="email-body">${html}</div>
+                    <br>
+                    <button onclick="exportSingleToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
+                    <button onclick="exportSingleToPDF('${divId}', '${sanitizeFilename(subject)}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
+                    <button onclick="deleteEmail('${msg.result.id}')">Elimina Definitivamente</button>
                 </div>
             `);
         }
         content.innerHTML = output.join('');
-    }
-
-    // Carica e mostra il corpo solo al click su Espandi
-    async function expandEmail(messageId, filename) {
-        const container = document.getElementById(`email-${messageId}`);
-        const bodyDiv = container.querySelector('.email-body');
-        const expandBtn = container.querySelector('button');
-
-        if (bodyDiv.style.display !== 'none') {
-            // Se già visibile, nascondi (toggle)
-            bodyDiv.style.display = 'none';
-            expandBtn.innerText = 'Espandi';
-            return;
-        }
-
-        bodyDiv.innerHTML = 'Caricamento...';
-
-        // Carica il messaggio completo
-        const msg = await gapi.client.gmail.users.messages.get({
-            'userId': 'me',
-            'id': messageId
-        });
-        const { html, attachments } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-
-        // Mostra il corpo + bottoni download
-        bodyDiv.innerHTML = html +
-            `<br>
-            <button onclick="exportSingleToHTML('email-${messageId}', '${filename}')">Scarica HTML</button>
-            <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>`;
-        bodyDiv.style.display = 'block';
-        expandBtn.innerText = 'Riduci';
     }
 
     function extractBodyAndAttachments(payload, messageId) {
@@ -304,10 +273,22 @@
         return res.result.data;
     }
 
+    async function deleteEmail(messageId) {
+        if (!confirm("Sei sicuro di voler ELIMINARE DEFINITIVAMENTE questa email? (L'operazione non è reversibile)")) return;
+        try {
+            await gapi.client.gmail.users.messages.delete({
+                'userId': 'me',
+                'id': messageId
+            });
+            document.getElementById(`email-${messageId}`).remove();
+            alert("Email eliminata definitivamente.");
+        } catch (e) {
+            alert("Errore durante l'eliminazione: " + (e.result?.error?.message || e.message));
+        }
+    }
+
     window.gapiLoaded = gapiLoaded;
     window.gisLoaded = gisLoaded;
-    window.expandEmail = expandEmail; // Make expandEmail available globally
-
     </script>
 
     <!-- Caricamento librerie -->
