@@ -153,47 +153,50 @@
         return decoder.decode(bytes);
     }
 
-    async function listMessages() {
+async function listMessages() {
+    let messages = [];
+    let nextPageToken = null;
+    do {
         const res = await gapi.client.gmail.users.messages.list({
             'userId': 'me',
-            'maxResults': 10
+            'maxResults': 100, // massimo consentito
+            'pageToken': nextPageToken
         });
-
-        if (!res.result.messages) {
-            content.innerHTML = 'Nessun messaggio trovato.';
-            return;
+        if (res.result.messages) {
+            messages = messages.concat(res.result.messages);
         }
+        nextPageToken = res.result.nextPageToken;
+    } while (nextPageToken);
 
-        const output = [];
-
-        for (const message of res.result.messages) {
-            const msg = await gapi.client.gmail.users.messages.get({
-                'userId': 'me',
-                'id': message.id
-            });
-
-            const headers = msg.result.payload.headers;
-            const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
-            const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
-
-            const {html, attachments} = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-
-            const divId = `email-${msg.result.id}`;
-
-            output.push(`
-                <div class="email" id="${divId}">
-                    <strong>Da:</strong> ${from}<br>
-                    <strong>Oggetto:</strong> ${subject}<br><br>
-                    <div class="email-body">${html}</div>
-                    <br>
-                    <button onclick="exportSingleToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
-                    <button onclick="exportSingleToPDF('${divId}', '${sanitizeFilename(subject)}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
-                </div>
-            `);
-        }
-
-        content.innerHTML = output.join('');
+    if (messages.length === 0) {
+        content.innerHTML = 'Nessun messaggio trovato.';
+        return;
     }
+
+    const output = [];
+    for (const message of messages) {
+        const msg = await gapi.client.gmail.users.messages.get({
+            'userId': 'me',
+            'id': message.id
+        });
+        const headers = msg.result.payload.headers;
+        const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
+        const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
+        const {html, attachments} = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+        const divId = `email-${msg.result.id}`;
+        output.push(`
+            <div class="email" id="${divId}">
+                <strong>Da:</strong> ${from}<br>
+                <strong>Oggetto:</strong> ${subject}<br><br>
+                <div class="email-body">${html}</div>
+                <br>
+                <button onclick="exportSingleToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
+                <button onclick="exportSingleToPDF('${divId}', '${sanitizeFilename(subject)}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
+            </div>
+        `);
+    }
+    content.innerHTML = output.join('');
+}
 
     function extractBodyAndAttachments(payload, messageId) {
         let html = '';
