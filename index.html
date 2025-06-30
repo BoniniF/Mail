@@ -295,24 +295,42 @@ async function listMessages() {
         link.click();
     }
 
-    async function exportSingleToPDF(divId, filename, attachments) {
-        const element = document.getElementById(divId).querySelector('.email-body');
-        let cloned = element.cloneNode(true);
+async function exportSingleToPDF(divId, filename, attachments) {
+    const element = document.getElementById(divId).querySelector('.email-body');
+    // Clona il nodo: serve per manipolare le immagini senza toccare la versione visibile
+    const cloned = element.cloneNode(true);
 
-        const imgTags = cloned.querySelectorAll('img');
-        for (const img of imgTags) {
-            const src = img.getAttribute('src');
-            if (src?.startsWith('cid:')) {
-                const cid = src.replace('cid:', '');
-                if (attachments[cid]) {
-                    const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
-                    img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
-                }
+    // Risolvi immagini cid
+    const imgTags = cloned.querySelectorAll('img');
+    for (const img of imgTags) {
+        const src = img.getAttribute('src');
+        if (src?.startsWith('cid:')) {
+            const cid = src.replace('cid:', '');
+            if (attachments[cid]) {
+                const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
+                img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
             }
         }
-
-        html2pdf().from(cloned).save(`${filename}.pdf`);
     }
+
+    // Metti il clone in un div temporaneo invisibile (necessario per css e rendering corretto)
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.left = '-9999px';
+    tempDiv.appendChild(cloned);
+    document.body.appendChild(tempDiv);
+
+    // Attendi che le immagini si carichino (opzionale, ma consigliato per pdf di immagini inline)
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    await html2pdf().from(cloned).set({
+        filename: `${filename}.pdf`,
+        html2canvas: { scale: 2 }
+    }).save();
+
+    // Rimuovi il div temporaneo dopo l’esportazione
+    document.body.removeChild(tempDiv);
+}
 
     async function getAttachmentData(messageId, attachmentId) {
         const res = await gapi.client.gmail.users.messages.attachments.get({
