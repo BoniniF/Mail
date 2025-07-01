@@ -140,21 +140,23 @@ const OUTLOOK_REDIRECT_URI = 'https://boninif.github.io/Mail/oauth.html'; // cre
 const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
 
 window.onload = function() {
+    // Se c'è un nuovo token dalla login Outlook
     if (window.location.hash.includes('access_token=')) {
         const params = new URLSearchParams(window.location.hash.substr(1));
         const accessToken = params.get('access_token');
         if (accessToken) {
             localStorage.setItem('outlook_access_token', accessToken);
-            // eventualmente rimuovi il token dalla URL per pulizia:
             window.location.hash = '';
-            // ora puoi chiamare fetchOutlookEmails()
             fetchOutlookMessages(accessToken);
+            return;
         }
-         else if (localStorage.getItem('outlook_access_token')) {
-        fetchOutlookMessages(localStorage.getItem('outlook_access_token'));
     }
+    // Se sei già loggato Outlook
+    const storedToken = localStorage.getItem('outlook_access_token');
+    if (storedToken) {
+        fetchOutlookMessages(storedToken);
     }
-};
+}
         
 document.getElementById('outlook_login').onclick = function() {
     const params = new URLSearchParams({
@@ -178,13 +180,7 @@ document.getElementById('outlook_login').onclick = function() {
         renderBulkActions();
     }
 
-        async function fetchOutlookMessages(token) {
-    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-    const data = await res.json();
-    // Cicla su data.value e mostra nella UI come già fai per Gmail
-}
+
 
         async function fetchOutlookMessages(token) {
     content.innerHTML = 'Caricamento email Outlook...';
