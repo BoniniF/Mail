@@ -131,7 +131,7 @@ async function getApiKeyFromServer() {
     const sig = await sha256_hmac(timestamp.toString(), "CAMBIA_QUESTA_STRINGA_SUPER_SEGRETA");
     const token = `${timestamp}.${sig}`;
     // 2. Chiedi la chiave al PHP
-    const resp = await fetch('https://bonini.ct.ws/secure/mail.php', {
+    const resp = await fetch('https://bonini.ct.ws/mail/mail.php', {
         method: 'POST',
         credentials: 'include',
         headers: {'Content-Type': 'application/json'},
