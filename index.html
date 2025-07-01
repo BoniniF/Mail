@@ -148,7 +148,11 @@ window.onload = function() {
             // eventualmente rimuovi il token dalla URL per pulizia:
             window.location.hash = '';
             // ora puoi chiamare fetchOutlookEmails()
+            fetchOutlookMessages(accessToken);
         }
+         else if (localStorage.getItem('outlook_access_token')) {
+        fetchOutlookMessages(localStorage.getItem('outlook_access_token'));
+    }
     }
 };
         
@@ -182,7 +186,38 @@ document.getElementById('outlook_login').onclick = function() {
     // Cicla su data.value e mostra nella UI come già fai per Gmail
 }
 
-        
+        async function fetchOutlookMessages(token) {
+    content.innerHTML = 'Caricamento email Outlook...';
+    selectedEmails.clear();
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
+        content.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
+        bulkActions.style.display = 'none';
+        return;
+    }
+    const output = data.value.map(msg => `
+        <div class="email" id="email-${msg.id}">
+            <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
+            <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;<br>
+            <strong>Oggetto:</strong> ${msg.subject || '(Senza oggetto)'}<br>
+            <strong>Data:</strong> ${msg.receivedDateTime ? new Date(msg.receivedDateTime).toLocaleString() : ''}
+            <details><summary>Mostra contenuto</summary>
+                <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
+            </details>
+        </div>
+    `);
+    content.innerHTML = output.join('');
+    renderBulkActions();
+}
+// Helper per sicurezza
+function escapeHtml(text) {
+    return text ? text.replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m])) : '';
+}
 
     function renderBulkActions() {
         const checkboxes = content.querySelectorAll('.email-checkbox');
