@@ -64,7 +64,7 @@
 </head>
 <body>
 
-    <h1>Gmail Viewer</h1>
+    <h1>Gmail Viewer --</h1>
 
     <div id="g_id_onload"
          data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
@@ -103,7 +103,11 @@
 
     <script>
     const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com';
-    const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
+    let API_KEY = '';
+getApiKeyFromServer().then(key => {
+    API_KEY = key;
+    // Inizializza la GAPI/altro qui!
+}).catch(e => alert("Errore di sicurezza: " + e.message));
     const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
     const SCOPES = 'https://mail.google.com/';
 
@@ -119,6 +123,36 @@
 
     const selectedEmails = new Set();
 
+async function getApiKeyFromServer() {
+    // 1. Genera token temporaneo
+    const timestamp = Math.floor(Date.now() / 1000);
+    // La firma viene fatta lato JS solo per dimostrazione: l'ideale sarebbe un challenge/response, ma così è già molto più sicuro che esporre la chiave!
+    // Qui la "firma" NON è segreta, ma il server accetta solo token freschi e dal dominio giusto
+    const sig = await sha256_hmac(timestamp.toString(), "CAMBIA_QUESTA_STRINGA_SUPER_SEGRETA");
+    const token = `${timestamp}.${sig}`;
+    // 2. Chiedi la chiave al PHP
+    const resp = await fetch('https://bonini.ct.ws/secure/mail.php', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token})
+    });
+    if (!resp.ok) throw new Error("Errore server: " + resp.status);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    return data.api_key;
+}
+
+// Funzione per SHA256 HMAC in JS (usa Web Crypto API)
+async function sha256_hmac(msg, key) {
+    const enc = new TextEncoder();
+    const keyBuf = await crypto.subtle.importKey(
+        "raw", enc.encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+    );
+    const sigBuf = await crypto.subtle.sign("HMAC", keyBuf, enc.encode(msg));
+    return Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+        
     // Checkbox logic
     function onEmailCheckboxChange(checkbox) {
         const id = checkbox.getAttribute('data-id');
