@@ -60,12 +60,26 @@
             margin-right: 8px;
             transform: scale(1.2);
         }
+
+        #imap-content .email { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px; margin-bottom: 15px; }
+#imap-content .email-body { border: 1px solid #ccc; padding: 10px; background: #fafafa; margin-top: 10px; overflow-x: auto; }
     </style>
 </head>
 <body>
 
-    <h1>Gmail Viewer</h1>
+    <h1>Gmail Viewer --- </h1>
 
+<h2>Altri servizi email (IMAP)</h2>
+<form id="imap-login-form" style="margin-bottom: 20px;">
+    <label>Email: <input type="email" id="imap-email" required></label>
+    <label>Password: <input type="password" id="imap-password" required></label>
+    <label>Server IMAP: <input type="text" id="imap-host" placeholder="es. imap.libero.it" required></label>
+    <label>Porta: <input type="number" id="imap-port" value="993"></label>
+    <label>TLS: <input type="checkbox" id="imap-tls" checked></label>
+    <button type="submit">Connetti</button>
+</form>
+<div id="imap-content"></div>
+    
     <div id="g_id_onload"
          data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
          data-context="signin"
@@ -274,6 +288,12 @@
         renderBulkActions();
     }
 
+
+
+
+
+
+        
     // Expand/Download helpers
     async function expandEmail(messageId, filename) {
         const container = document.getElementById(`email-${messageId}`);
@@ -478,6 +498,44 @@
 
     window.gapiLoaded = gapiLoaded;
     window.gisLoaded = gisLoaded;
+
+
+        document.getElementById('imap-login-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const data = {
+        host: document.getElementById('imap-host').value,
+        port: parseInt(document.getElementById('imap-port').value),
+        user: document.getElementById('imap-email').value,
+        password: document.getElementById('imap-password').value,
+        tls: document.getElementById('imap-tls').checked
+    };
+    document.getElementById('imap-content').innerHTML = "Caricamento...";
+    try {
+        const res = await fetch('https://bonini.zya.me/mail/mail.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const emails = await res.json();
+        if (emails.error) throw emails.error;
+        if (emails.length === 0) {
+            document.getElementById('imap-content').innerHTML = "Nessun messaggio trovato.";
+            return;
+        }
+        document.getElementById('imap-content').innerHTML = emails.map(email =>
+            `<div class="email">
+                <strong>Da:</strong> ${email.from}<br>
+                <strong>Oggetto:</strong> ${email.subject}<br>
+                <strong>Data:</strong> ${email.date}<br>
+                <details><summary>Mostra contenuto</summary>
+                    <div class="email-body">${email.body_html || email.body}</div>
+                </details>
+            </div>`
+        ).join('');
+    } catch (e) {
+        document.getElementById('imap-content').innerHTML = "Errore: " + e;
+    }
+};
 
     </script>
 
