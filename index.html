@@ -98,6 +98,8 @@
 
     <div>
         <button id="signout_button" style="display:none;">Disconnettiti</button>
+    <button id="outlook_login">Accedi con Outlook</button>
+    <button id="yahoo_login">Accedi con Yahoo</button>
     </div>
 
     <!-- Bulk actions UI -->
@@ -133,6 +135,21 @@
 
     const selectedEmails = new Set();
 
+const OUTLOOK_CLIENT_ID = 'TUO_CLIENT_ID_AZURE';
+const OUTLOOK_REDIRECT_URI = 'https://TUOSITO.EXT/oauth.html'; // crea questa pagina per ricevere il token
+const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
+
+document.getElementById('outlook_login').onclick = function() {
+    const params = new URLSearchParams({
+        client_id: OUTLOOK_CLIENT_ID,
+        response_type: 'token', // o "code" per PKCE se hai backend
+        redirect_uri: OUTLOOK_REDIRECT_URI,
+        scope: OUTLOOK_SCOPE,
+        response_mode: 'fragment'
+    });
+    window.location = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`;
+}
+        
     // Checkbox logic
     function onEmailCheckboxChange(checkbox) {
         const id = checkbox.getAttribute('data-id');
@@ -143,6 +160,14 @@
         }
         renderBulkActions();
     }
+
+        async function fetchOutlookMessages(token) {
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    // Cicla su data.value e mostra nella UI come già fai per Gmail
+}
 
     function renderBulkActions() {
         const checkboxes = content.querySelectorAll('.email-checkbox');
