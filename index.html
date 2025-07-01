@@ -139,6 +139,19 @@ const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
 const OUTLOOK_REDIRECT_URI = 'https://boninif.github.io/Mail/oauth.html'; // crea questa pagina per ricevere il token
 const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
 
+window.onload = function() {
+    if (window.location.hash.includes('access_token=')) {
+        const params = new URLSearchParams(window.location.hash.substr(1));
+        const accessToken = params.get('access_token');
+        if (accessToken) {
+            localStorage.setItem('outlook_access_token', accessToken);
+            // eventualmente rimuovi il token dalla URL per pulizia:
+            window.location.hash = '';
+            // ora puoi chiamare fetchOutlookEmails()
+        }
+    }
+};
+        
 document.getElementById('outlook_login').onclick = function() {
     const params = new URLSearchParams({
         client_id: OUTLOOK_CLIENT_ID,
@@ -168,6 +181,8 @@ document.getElementById('outlook_login').onclick = function() {
     const data = await res.json();
     // Cicla su data.value e mostra nella UI come già fai per Gmail
 }
+
+        
 
     function renderBulkActions() {
         const checkboxes = content.querySelectorAll('.email-checkbox');
