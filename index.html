@@ -148,7 +148,7 @@ async function submitLogin() {
         return;
     }
 
-    const res = await fetch('http://bonini.hstn.me/mail/auth.php', {
+    const res = await fetch('https://bonini.hstn.me/mail/auth.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password})
