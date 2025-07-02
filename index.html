@@ -2,7 +2,8 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8" />
-    <title>Gmail Viewer</title>
+    <title>BoniniF mail storage</title>
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -118,6 +119,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
+        const msalConfig = {
+    auth: {
+        clientId: '5dcc792b-ad91-4d6b-88e8-44e149c4b885', // il vostro client ID
+        authority: "https://login.microsoftonline.com/common", 
+        redirectUri: "https://boninif.github.io/Mail/" // questa pagina stessa
+    }
+};
+
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+const loginRequest = {
+    scopes: ["Mail.Read", "offline_access", "User.Read"]
+};
+
     const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com';
     const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
     const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
@@ -158,16 +173,35 @@ window.onload = function() {
     }
 }
         
-document.getElementById('outlook_login').onclick = function() {
-    const params = new URLSearchParams({
-        client_id: OUTLOOK_CLIENT_ID,
-        response_type: 'token', // o "code" per PKCE se hai backend
-        redirect_uri: OUTLOOK_REDIRECT_URI,
-        scope: OUTLOOK_SCOPE,
-        response_mode: 'fragment'
-    });
-    window.location = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`;
+document.getElementById('outlook_login').onclick = async function() {
+    try {
+        const loginResponse = await msalInstance.loginPopup(loginRequest);
+        const account = loginResponse.account;
+        const accessTokenResponse = await msalInstance.acquireTokenSilent({
+            ...loginRequest,
+            account: account
+        }).catch(() => {
+            return msalInstance.acquireTokenPopup(loginRequest);
+        });
+
+        const accessToken = accessTokenResponse.accessToken;
+        localStorage.setItem('outlook_access_token', accessToken);
+        fetchOutlookMessages(accessToken);
+    } catch (error) {
+        alert("Errore login Outlook: " + error);
+    }
+};
+function logoutOutlook() {
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+        msalInstance.logoutPopup({
+            account: accounts[0]
+        });
+        localStorage.removeItem('outlook_access_token');
+        content.innerHTML = '';
+    }
 }
+
         
     // Checkbox logic
     function onEmailCheckboxChange(checkbox) {
