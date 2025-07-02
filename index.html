@@ -111,6 +111,27 @@
         <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
     </div>
 
+
+    <div id="login-modal" style="display:none;">
+  <h2>Accesso in corso...</h2>
+</div>
+<script>
+function loginWithGoogle() {
+    document.getElementById('login-modal').style.display = 'block';
+    tokenClient.callback = async (resp) => {
+        document.getElementById('login-modal').style.display = 'none';
+        if (resp.error !== undefined) {
+            alert('Errore login: ' + resp.error);
+            return;
+        }
+        await listMessages();
+    };
+    tokenClient.requestAccessToken({prompt: 'consent'});
+}
+</script>
+
+
+    
     <div id="content"></div>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
