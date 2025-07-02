@@ -81,7 +81,7 @@
 </div>
 
 
-    <h1>Gmail Viewer -- </h1>
+    <h1>Gmail Viewer ---- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -377,7 +377,7 @@ async function saveSelectedEmails() {
         const subject = subjectMatch ? subjectMatch[1] : "email";
         const body = container.querySelector('.email-body').innerHTML;
 
-        const res = await fetch('http://bonini.hstn.me/mail/save.php', {
+        const res = await fetch('https://bonini.hstn.me/mail/save.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -398,7 +398,7 @@ async function saveSelectedEmails() {
 
 async function showSavedEmails() {
     content.innerHTML = 'Caricamento mail salvate...';
-    const res = await fetch('http://bonini.hstn.me/mail/list.php?user=' + currentUser);
+    const res = await fetch('https://bonini.hstn.me/mail/list.php?user=' + currentUser);
     const files = await res.json();
     if (files.length === 0) {
         content.innerHTML = 'Nessuna mail salvata.';
@@ -422,7 +422,7 @@ async function openSavedEmail(file) {
 
 async function deleteSavedEmail(file) {
     if (!confirm(`Eliminare ${file}?`)) return;
-    const res = await fetch('http://bonini.hstn.me/mail/delete.php', {
+    const res = await fetch('https://bonini.hstn.me/mail/delete.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({user: currentUser, filename: file})
