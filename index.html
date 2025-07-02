@@ -100,7 +100,6 @@
     <div>
         <button id="signout_button" style="display:none;">Disconnettiti</button>
     <button id="outlook_login">Accedi con Outlook</button>
-    <button id="yahoo_login">Accedi con Yahoo</button>
     </div>
 
     <!-- Bulk actions UI -->
@@ -246,14 +245,14 @@ async function fetchYahooEmails(token) {
             return;
         }
         document.getElementById('imap-content').innerHTML = emails.map(email =>
-            <div class="email">
+            `<div class="email">
                 <strong>Da:</strong> ${email.from}<br>
                 <strong>Oggetto:</strong> ${email.subject}<br>
                 <strong>Data:</strong> ${email.date}<br>
                 <details><summary>Mostra contenuto</summary>
                     <div class="email-body">${email.body_html || email.body}</div>
                 </details>
-            </div>
+            </div>`
         ).join('');
     } catch (e) {
         document.getElementById('imap-content').innerHTML = "Errore Yahoo: " + e;
@@ -297,7 +296,7 @@ function logoutOutlook() {
         response_type: 'code',
         scope: YAHOO_SCOPE
     });
-    window.location = https://api.login.yahoo.com/oauth2/request_auth?${params};
+    window.location = `https://api.login.yahoo.com/oauth2/request_auth?${params}`;
 };
 
 
@@ -319,7 +318,7 @@ function logoutOutlook() {
     content.innerHTML = 'Caricamento email Outlook...';
     selectedEmails.clear();
     const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
-        headers: { Authorization: Bearer ${token} }
+        headers: { Authorization: `Bearer ${token}` }
     });
     const data = await res.json();
     if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
@@ -327,7 +326,7 @@ function logoutOutlook() {
         bulkActions.style.display = 'none';
         return;
     }
-    const output = data.value.map(msg => 
+    const output = data.value.map(msg => `
         <div class="email" id="email-${msg.id}">
             <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
             <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;<br>
@@ -337,7 +336,7 @@ function logoutOutlook() {
                 <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
             </details>
         </div>
-    );
+    `);
     content.innerHTML = output.join('');
     renderBulkActions();
 }
@@ -357,7 +356,7 @@ function escapeHtml(text) {
             [...checkboxes].every(cb => cb.checked)
         );
         // Aggiorna il contatore selezionati
-        selectedCountSpan.textContent = selectedEmails.size > 0 ? Selezionate: ${selectedEmails.size} : '';
+        selectedCountSpan.textContent = selectedEmails.size > 0 ? `Selezionate: ${selectedEmails.size}` : '';
     }
 
     selectAllCheckbox.addEventListener('change', function () {
@@ -476,8 +475,8 @@ function escapeHtml(text) {
             const headers = msg.result.payload.headers;
             const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
             const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
-            const divId = email-${msg.result.id};
-            output.push(
+            const divId = `email-${msg.result.id}`;
+            output.push(`
                 <div class="email" id="${divId}">
                     <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
                     <strong>Da:</strong> ${from}<br>
@@ -486,7 +485,7 @@ function escapeHtml(text) {
                     <button onclick="deleteEmail('${msg.result.id}')">Elimina</button>
                     <div class="email-body" style="display:none;"></div>
                 </div>
-            );
+            `);
         }
         content.innerHTML = output.join('');
         renderBulkActions();
@@ -500,7 +499,7 @@ function escapeHtml(text) {
         
     // Expand/Download helpers
     async function expandEmail(messageId, filename) {
-        const container = document.getElementById(email-${messageId});
+        const container = document.getElementById(`email-${messageId}`);
         const bodyDiv = container.querySelector('.email-body');
         const expandBtn = container.querySelector('button');
 
@@ -520,9 +519,9 @@ function escapeHtml(text) {
         const { html, attachments } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
 
         bodyDiv.innerHTML = html +
-            <br>
+            `<br>
             <button onclick="exportSingleToHTML('email-${messageId}', '${filename}')">Scarica HTML</button>
-            <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>;
+            <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>`;
         bodyDiv.style.display = 'block';
         expandBtn.innerText = 'Riduci';
     }
@@ -567,11 +566,11 @@ function escapeHtml(text) {
 
     function exportSingleToHTML(divId, filename) {
         const element = document.getElementById(divId);
-        const htmlContent = <html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>;
+        const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>`;
         const blob = new Blob([htmlContent], {type: "text/html"});
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = ${filename}.html;
+        link.download = `${filename}.html`;
         link.click();
     }
     window.exportSingleToHTML = exportSingleToHTML;
@@ -588,7 +587,7 @@ function escapeHtml(text) {
                 const cid = src.replace('cid:', '');
                 if (attachments[cid]) {
                     const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
-                    img.setAttribute('src', data:${attachments[cid].mimeType};base64,${data});
+                    img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
                 }
             }
         }
@@ -602,7 +601,7 @@ function escapeHtml(text) {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         await html2pdf().from(cloned).set({
-            filename: ${filename}.pdf,
+            filename: `${filename}.pdf`,
             html2canvas: { scale: 2 }
         }).save();
 
@@ -627,7 +626,7 @@ function escapeHtml(text) {
                 'userId': 'me',
                 'id': messageId
             });
-            const emailDiv = document.getElementById(email-${messageId});
+            const emailDiv = document.getElementById(`email-${messageId}`);
             if (emailDiv) emailDiv.remove();
             selectedEmails.delete(messageId);
             renderBulkActions();
@@ -645,15 +644,15 @@ function escapeHtml(text) {
             alert('Nessuna email selezionata.');
             return;
         }
-        if (!confirm(Eliminare definitivamente ${ids.length} email selezionate?)) return;
+        if (!confirm(`Eliminare definitivamente ${ids.length} email selezionate?`)) return;
         for (const id of ids) {
             try {
                 await gapi.client.gmail.users.messages.delete({'userId': 'me', 'id': id});
-                const emailDiv = document.getElementById(email-${id});
+                const emailDiv = document.getElementById(`email-${id}`);
                 if (emailDiv) emailDiv.remove();
                 selectedEmails.delete(id);
             } catch (e) {
-                alert(Errore su ${id}: ${e.message || e});
+                alert(`Errore su ${id}: ${e.message || e}`);
             }
         }
         renderBulkActions();
@@ -669,7 +668,7 @@ function escapeHtml(text) {
             return;
         }
         for (const id of ids) {
-            const container = document.getElementById(email-${id});
+            const container = document.getElementById(`email-${id}`);
             let subject = "email";
             if (container) {
                 const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
@@ -727,14 +726,14 @@ function escapeHtml(text) {
             return;
         }
         document.getElementById('imap-content').innerHTML = emails.map(email =>
-            <div class="email">
+            `<div class="email">
                 <strong>Da:</strong> ${email.from}<br>
                 <strong>Oggetto:</strong> ${email.subject}<br>
                 <strong>Data:</strong> ${email.date}<br>
                 <details><summary>Mostra contenuto</summary>
                     <div class="email-body">${email.body_html || email.body}</div>
                 </details>
-            </div>
+            </div>`
         ).join('');
     } catch (e) {
         document.getElementById('imap-content').innerHTML = "Errore: " + e;
