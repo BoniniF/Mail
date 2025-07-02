@@ -68,20 +68,7 @@
 </head>
 <body>
 
-    <div id="login-popup" style="
-    position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center;
-    z-index:9999;">
-    <div style="background:white; padding:20px; border-radius:10px; text-align:center; max-width:300px;">
-        <h2>Login</h2>
-        <input type="text" id="login-username" placeholder="Nome utente" style="width:90%;"><br><br>
-        <input type="password" id="login-password" placeholder="Password" style="width:90%;"><br><br>
-        <button onclick="submitLogin()">Accedi</button>
-    </div>
-</div>
-
-
-    <h1>Gmail Viewer ---- </h1>
+    <h1>Gmail Viewer -- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -122,9 +109,6 @@
         <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
         <button onclick="downloadSelectedEmails('pdf')">Scarica PDF selezionate</button>
         <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
-        <button onclick="showSavedEmails()">Visualizza Salvate</button>
-<button onclick="saveSelectedEmails()">Salva selezionate</button>
-
     </div>
 
     <div id="content"></div>
@@ -134,46 +118,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
-
-
-let currentUser = null;
-let credentials = {};
-
-async function submitLogin() {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-
-    if (!username || !password) {
-        alert('Inserisci nome utente e password');
-        return;
-    }
-
-    const res = await fetch('/mail/auth.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, password})
-    });
-
-    const data = await res.json();
-    if (data.success) {
-        currentUser = username;
-        credentials = data.credentials;
-        document.getElementById('login-popup').style.display = 'none';
-        loadSavedEmails();
-    } else {
-        alert('Login fallito: ' + data.message);
-    }
-}
-
-
-
-
-        
         const msalConfig = {
     auth: {
         clientId: '5dcc792b-ad91-4d6b-88e8-44e149c4b885', // il vostro client ID
         authority: "https://login.microsoftonline.com/common", 
-        redirectUri: "https://boninif.github.io/Mail/" // questa pagina stessa
+        redirectUri: "https://bonini.hstn.me/mail/" // questa pagina stessa
     }
 };
 
@@ -364,76 +313,6 @@ function logoutOutlook() {
     }
 
 
-async function saveSelectedEmails() {
-    const ids = getSelectedEmailIds();
-    if (!ids.length) {
-        alert('Nessuna email selezionata.');
-        return;
-    }
-
-    for (const id of ids) {
-        const container = document.getElementById(`email-${id}`);
-        const subjectMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
-        const subject = subjectMatch ? subjectMatch[1] : "email";
-        const body = container.querySelector('.email-body').innerHTML;
-
-        const res = await fetch('/mail/save.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                user: currentUser,
-                filename: sanitizeFilename(subject) + '.html',
-                content: `<html><body>${body}</body></html>`
-            })
-        });
-
-        const data = await res.json();
-        if (!data.success) {
-            alert('Errore nel salvataggio: ' + data.message);
-        }
-    }
-
-    alert('Email salvate correttamente.');
-}
-
-async function showSavedEmails() {
-    content.innerHTML = 'Caricamento mail salvate...';
-    const res = await fetch('/mail/list.php?user=' + currentUser);
-    const files = await res.json();
-    if (files.length === 0) {
-        content.innerHTML = 'Nessuna mail salvata.';
-        return;
-    }
-    content.innerHTML = files.map(file => `
-        <div class="email">
-            <strong>File:</strong> ${file}<br>
-            <button onclick="openSavedEmail('${file}')">Apri</button>
-            <button onclick="deleteSavedEmail('${file}')">Elimina</button>
-        </div>
-    `).join('');
-}
-
-async function openSavedEmail(file) {
-    const res = await fetch(`https://raw.githubusercontent.com/BoniniF/mail-private/main/mails/${currentUser}/${file}`);
-    const text = await res.text();
-    const win = window.open();
-    win.document.write(text);
-}
-
-async function deleteSavedEmail(file) {
-    if (!confirm(`Eliminare ${file}?`)) return;
-    const res = await fetch('/mail/delete.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user: currentUser, filename: file})
-    });
-    const data = await res.json();
-    if (data.success) {
-        showSavedEmails();
-    } else {
-        alert('Errore: ' + data.message);
-    }
-}
 
         async function fetchOutlookMessages(token) {
     content.innerHTML = 'Caricamento email Outlook...';
