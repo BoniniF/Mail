@@ -151,11 +151,37 @@ const loginRequest = {
     const selectedEmails = new Set();
 
 const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
-const OUTLOOK_REDIRECT_URI = 'https://boninif.github.io/Mail/oauth.html'; // crea questa pagina per ricevere il token
+const OUTLOOK_REDIRECT_URI = 'https://boninif.github.io/Mail/'; // crea questa pagina per ricevere il token
 const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
 
-window.onload = function() {
-    // Se c'è un nuovo token dalla login Outlook
+        const YAHOO_CLIENT_ID = 'dj0yJmk9bW81aDBsUWJyY044JmQ9WVdrOVUydFJSamhoVGt3bWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYy';
+const YAHOO_REDIRECT_URI = 'https://boninif.github.io/Mail/';
+const YAHOO_SCOPE = 'mail-r';
+const YAHOO_BACKEND = 'https://bonini.zya.me/mail/yahoo.php';
+
+
+
+        window.onload = async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const yahooCode = urlParams.get('code');
+
+    // ✅ Check Yahoo
+    if (yahooCode) {
+        document.body.innerHTML = "Autenticazione Yahoo in corso...";
+        try {
+            const token = await exchangeYahooCodeForToken(yahooCode);
+            if (token) {
+                localStorage.setItem('yahoo_access_token', token);
+                window.history.replaceState({}, document.title, window.location.pathname);
+                fetchYahooEmails(token);
+            }
+        } catch (e) {
+            alert("Errore durante l'autenticazione Yahoo: " + e);
+        }
+        return;
+    }
+
+    // ✅ Check Outlook
     if (window.location.hash.includes('access_token=')) {
         const params = new URLSearchParams(window.location.hash.substr(1));
         const accessToken = params.get('access_token');
@@ -166,12 +192,74 @@ window.onload = function() {
             return;
         }
     }
-    // Se sei già loggato Outlook
-    const storedToken = localStorage.getItem('outlook_access_token');
-    if (storedToken) {
-        fetchOutlookMessages(storedToken);
+
+    // ✅ Se già loggato Yahoo
+    const storedYahoo = localStorage.getItem('yahoo_access_token');
+    if (storedYahoo) {
+        fetchYahooEmails(storedYahoo);
+    }
+
+    // ✅ Se già loggato Outlook
+    const storedOutlook = localStorage.getItem('outlook_access_token');
+    if (storedOutlook) {
+        fetchOutlookMessages(storedOutlook);
+    }
+};
+
+        
+        
+
+
+async function exchangeYahooCodeForToken(code) {
+    const res = await fetch(YAHOO_BACKEND, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (data.error) {
+        throw new Error(data.error_description || data.error);
+    }
+    return data.access_token;
+}
+async function fetchYahooEmails(token) {
+    document.getElementById('imap-content').innerHTML = "Caricamento email Yahoo...";
+
+    const data = {
+        host: 'imap.mail.yahoo.com',
+        port: 993,
+        user: 'IL_TUO_ACCOUNT@yahoo.com', // o meglio, fate scegliere all'utente
+        password: token, // access token come password
+        tls: true
+    };
+
+    try {
+        const res = await fetch('https://bonini.zya.me/mail/mail.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const emails = await res.json();
+        if (emails.error) throw emails.error;
+        if (emails.length === 0) {
+            document.getElementById('imap-content').innerHTML = "Nessun messaggio trovato.";
+            return;
+        }
+        document.getElementById('imap-content').innerHTML = emails.map(email =>
+            `<div class="email">
+                <strong>Da:</strong> ${email.from}<br>
+                <strong>Oggetto:</strong> ${email.subject}<br>
+                <strong>Data:</strong> ${email.date}<br>
+                <details><summary>Mostra contenuto</summary>
+                    <div class="email-body">${email.body_html || email.body}</div>
+                </details>
+            </div>`
+        ).join('');
+    } catch (e) {
+        document.getElementById('imap-content').innerHTML = "Errore Yahoo: " + e;
     }
 }
+
         
 document.getElementById('outlook_login').onclick = async function() {
     try {
@@ -201,6 +289,17 @@ function logoutOutlook() {
         content.innerHTML = '';
     }
 }
+
+        document.getElementById('yahoo_login').onclick = function() {
+    const params = new URLSearchParams({
+        client_id: YAHOO_CLIENT_ID,
+        redirect_uri: YAHOO_REDIRECT_URI,
+        response_type: 'code',
+        scope: YAHOO_SCOPE
+    });
+    window.location = `https://api.login.yahoo.com/oauth2/request_auth?${params}`;
+};
+
 
         
     // Checkbox logic
