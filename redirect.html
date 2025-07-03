@@ -79,7 +79,7 @@
 
     
     
-    <h1>Gmail Viewer ----------------------------------- </h1>
+    <h1>Gmail Viewer ------------------------------------------------------------- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -160,7 +160,7 @@ const loginRequest = {
 
     const selectedEmails = new Set();
 
-        let CURRENT_USERNAME = ''; // verrà settato dopo login locale
+       
 
 
 const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
@@ -204,7 +204,7 @@ const YAHOO_BACKEND = 'https://bonini.zya.me/mail/yahoo.php';
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-        username: CURRENT_USERNAME,
+        username: mail_user,
         outlook_token: accessToken
     })
 });
@@ -439,12 +439,12 @@ function handleCredentialResponse(response) {
         }
 
         // ⛓️ Salva il token su GitHub via PHP
-        if (CURRENT_USERNAME) {
+        if (mail_user) {
             fetch('https://bonini.zya.me/mail/update_token.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    username: CURRENT_USERNAME,
+                    username: mail_user,
                     gmail_token: resp.access_token
                 })
             }).catch(err => console.error("Errore aggiornamento token Gmail:", err));
@@ -825,7 +825,7 @@ document.getElementById('login-form').onsubmit = async function(e) {
     if (result.success) {
         localStorage.setItem('mail_user', username);
         window.USERNAME = username;
-        CURRENT_USERNAME = username;
+        mail_user = username;
 
         const loginPopup = document.getElementById('login-popup');
         if (loginPopup) loginPopup.remove();
