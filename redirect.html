@@ -79,7 +79,7 @@
 
     
     
-    <h1>Gmail Viewer --------------- </h1>
+    <h1>Gmail Viewer ----------------------------------- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -814,28 +814,28 @@ document.getElementById('login-form').onsubmit = async function(e) {
     e.preventDefault();
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
+
     const res = await fetch('https://bonini.zya.me/mail/login.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password})
     });
+
     const result = await res.json();
     if (result.success) {
         localStorage.setItem('mail_user', username);
         window.USERNAME = username;
-        document.getElementById('login-popup').remove();
-
         CURRENT_USERNAME = username;
 
-        document.getElementById('login-popup').style.display = 'none';
-document.getElementById('login-popup').remove();
-        alert(result.message || "logged in");
+        const loginPopup = document.getElementById('login-popup');
+        if (loginPopup) loginPopup.remove();
 
+        alert(result.message || "Logged in");
     } else {
         alert(result.message || "Accesso negato");
     }
-    
 };
+
         
     </script>
 
