@@ -338,11 +338,18 @@ function logoutOutlook() {
 
 
         async function fetchOutlookMessages(token) {
-    content.innerHTML = 'Caricamento email Outlook...';
+       content.innerHTML = 'Caricamento email Outlook...';
     selectedEmails.clear();
     const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
         headers: { Authorization: `Bearer ${token}` }
     });
+
+    if (res.status === 401) {
+        alert("Token Outlook non valido. Effettua di nuovo il login.");
+        localStorage.removeItem('outlook_access_token');
+        return;
+    }
+
     const data = await res.json();
     if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
         content.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
