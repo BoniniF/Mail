@@ -79,7 +79,7 @@
 
     
     
-    <h1>Gmail Viewer ------------------------------------------------------------------------------------------------------------------------------------------------ </h1>
+    <h1>Gmail Viewer ---------------------------------------------------------------------------------------------------------------------------------------------------------- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -312,15 +312,15 @@ function logoutOutlook() {
     }
 }
 
-        document.getElementById('yahoo_login').onclick = function() {
-    const params = new URLSearchParams({
-        client_id: YAHOO_CLIENT_ID,
-        redirect_uri: YAHOO_REDIRECT_URI,
-        response_type: 'code',
-        scope: YAHOO_SCOPE
-    });
+//        document.getElementById('yahoo_login').onclick = function() {
+//    const params = new URLSearchParams({
+ //       client_id: YAHOO_CLIENT_ID,
+ //       redirect_uri: YAHOO_REDIRECT_URI,
+ //       response_type: 'code',
+ //       scope: YAHOO_SCOPE
+ //   });
     window.location = `https://api.login.yahoo.com/oauth2/request_auth?${params}`;
-};
+//};
 
 
         
