@@ -170,7 +170,7 @@ const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
         const YAHOO_CLIENT_ID = 'dj0yJmk9bW81aDBsUWJyY044JmQ9WVdrOVUydFJSamhoVGt3bWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYy';
 const YAHOO_REDIRECT_URI = 'https://bonini.hstn.me/mail/';
 const YAHOO_SCOPE = 'mail-r';
-const YAHOO_BACKEND = 'https://bonini.zya.me/mail/yahoo.php';
+const YAHOO_BACKEND = './yahoo.php';
 
 
 
@@ -200,7 +200,7 @@ const YAHOO_BACKEND = 'https://bonini.zya.me/mail/yahoo.php';
         const accessToken = params.get('access_token');
         if (accessToken) {
             localStorage.setItem('outlook_access_token', accessToken);
-            fetch('https://bonini.zya.me/mail/update_token.php', {
+            fetch('./update_token.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -256,7 +256,7 @@ async function fetchYahooEmails(token) {
     };
 
     try {
-        const res = await fetch('https://bonini.zya.me/mail/mail.php', {
+        const res = await fetch('./mail.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -440,7 +440,7 @@ function handleCredentialResponse(response) {
 
         // ⛓️ Salva il token su GitHub via PHP
         if (mail_user) {
-            fetch('https://bonini.zya.me/mail/update_token.php', {
+            fetch('./update_token.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -581,7 +581,7 @@ async function saveEmailToAccount(filename, divId) {
         return;
     }
 
-    const res = await fetch('https://bonini.zya.me/mail/save_html.php', {
+    const res = await fetch('./save_html.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, filename, html})
@@ -784,7 +784,7 @@ window.saveEmailToAccount = saveEmailToAccount;
     };
     document.getElementById('imap-content').innerHTML = "Caricamento...";
     try {
-        const res = await fetch('https://bonini.zya.me/mail/mail.php', {
+        const res = await fetch('./mail.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -816,7 +816,7 @@ document.getElementById('login-form').onsubmit = async function(e) {
     const password = document.getElementById('password').value;
 
     try {
-        const res = await fetch('https://bonini.zya.me/mail/login.php', {
+        const res = await fetch('./login.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({username, password})
