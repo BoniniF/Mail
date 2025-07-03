@@ -821,6 +821,7 @@ document.getElementById('login-form').onsubmit = async function(e) {
         CURRENT_USERNAME = nomeUtenteInserito;
 
         document.getElementById('login-popup').style.display = 'none';
+document.getElementById('login-popup').remove();
 
     } else {
         alert(result.message || "Accesso negato");
