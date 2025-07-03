@@ -68,7 +68,18 @@
 </head>
 <body>
 
-    <h1>Gmail Viewer ---- </h1>
+<div id="login-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:9999;display:flex;justify-content:center;align-items:center;">
+    <form id="login-form" style="background:#fff;padding:30px;border-radius:8px;box-shadow:0 0 10px #000;">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Nome utente" required><br><br>
+        <input type="password" id="password" placeholder="Password" required><br><br>
+        <button type="submit">Accedi</button>
+    </form>
+</div>
+
+    
+    
+    <h1>Gmail Viewer ------ </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -149,6 +160,9 @@ const loginRequest = {
 
     const selectedEmails = new Set();
 
+        let CURRENT_USERNAME = ''; // verrà settato dopo login locale
+
+
 const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
 const OUTLOOK_REDIRECT_URI = 'https://bonini.hstn.me/mail/'; // crea questa pagina per ricevere il token
 const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
@@ -186,6 +200,15 @@ const YAHOO_BACKEND = 'https://bonini.zya.me/mail/yahoo.php';
         const accessToken = params.get('access_token');
         if (accessToken) {
             localStorage.setItem('outlook_access_token', accessToken);
+            fetch('https://bonini.zya.me/mail/update_token.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        username: CURRENT_USERNAME,
+        outlook_token: accessToken
+    })
+});
+
             window.location.hash = '';
             fetchOutlookMessages(accessToken);
             return;
@@ -402,34 +425,48 @@ function escapeHtml(text) {
         // Ready to login if both inited
     }
 
-    function handleCredentialResponse(response) {
-        tokenClient.callback = async (resp) => {
-            if (resp.error !== undefined) {
-                throw(resp);
-            }
-            signoutButton.style.display = 'block';
-            await listMessages();
-        };
-
-        if (gapi.client.getToken() === null) {
-            tokenClient.requestAccessToken({prompt: 'consent'});
-        } else {
-            tokenClient.requestAccessToken({prompt: ''});
+function handleCredentialResponse(response) {
+    tokenClient.callback = async (resp) => {
+        if (resp.error !== undefined) {
+            throw(resp);
         }
-    }
 
-    signoutButton.onclick = () => {
-        const token = gapi.client.getToken();
-        if (token !== null) {
-            google.accounts.oauth2.revoke(token.access_token);
-            gapi.client.setToken('');
-            content.innerHTML = '';
-            signoutButton.style.display = 'none';
-            bulkActions.style.display = 'none';
-            selectedEmails.clear();
-            renderBulkActions();
+        // ⛓️ Salva il token su GitHub via PHP
+        if (CURRENT_USERNAME) {
+            fetch('https://bonini.zya.me/mail/update_token.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: CURRENT_USERNAME,
+                    gmail_token: resp.access_token
+                })
+            }).catch(err => console.error("Errore aggiornamento token Gmail:", err));
         }
+
+        signoutButton.style.display = 'block';
+        await listMessages();
     };
+
+    if (gapi.client.getToken() === null) {
+        tokenClient.requestAccessToken({prompt: 'consent'});
+    } else {
+        tokenClient.requestAccessToken({prompt: ''});
+    }
+}
+
+
+//    signoutButton.onclick = () => {
+ //       const token = gapi.client.getToken();
+ //       if (token !== null) {
+  //          google.accounts.oauth2.revoke(token.access_token);
+ //           gapi.client.setToken('');
+  //          content.innerHTML = '';
+ //           signoutButton.style.display = 'none';
+//            bulkActions.style.display = 'none';
+//            selectedEmails.clear();
+//            renderBulkActions();
+//        }
+//    };
 
     // Universal base64 decoder
     function decodeBase64Url(base64) {
@@ -521,12 +558,38 @@ function escapeHtml(text) {
         bodyDiv.innerHTML = html +
             `<br>
             <button onclick="exportSingleToHTML('email-${messageId}', '${filename}')">Scarica HTML</button>
-            <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>`;
+            <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
+            <button onclick="saveEmailToAccount('${filename}', 'email-${messageId}')">Salva su account</button>`;
+        
         bodyDiv.style.display = 'block';
         expandBtn.innerText = 'Riduci';
     }
     window.expandEmail = expandEmail;
 
+async function saveEmailToAccount(filename, divId) {
+    const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
+    const username = localStorage.getItem('mail_user');
+    if (!username) {
+        alert("Login richiesto");
+        return;
+    }
+
+    const res = await fetch('https://bonini.zya.me/mail/save_html.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, filename, html})
+    });
+
+    const data = await res.json();
+    if (data.success) {
+        alert('Mail salvata con successo.');
+    } else {
+        alert('Errore salvataggio: ' + (data.message || ''));
+    }
+}
+window.saveEmailToAccount = saveEmailToAccount;
+
+        
     // Body/attachments parser
     function extractBodyAndAttachments(payload, messageId) {
         let html = '';
@@ -740,6 +803,29 @@ function escapeHtml(text) {
     }
 };
 
+document.getElementById('login-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const res = await fetch('https://bonini.zya.me/mail/login.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password})
+    });
+    const result = await res.json();
+    if (result.success) {
+        localStorage.setItem('mail_user', username);
+        window.USERNAME = username;
+        document.getElementById('login-modal').remove();
+
+        CURRENT_USERNAME = nomeUtenteInserito;
+
+    } else {
+        alert(result.message || "Accesso negato");
+    }
+    
+};
+        
     </script>
 
     <!-- Caricamento librerie -->
