@@ -79,7 +79,7 @@
 
     
     
-    <h1>Gmail Viewer ------------------------------------------------------------------------------------------- </h1>
+    <h1>Gmail Viewer -------------------------------------------------------------------------------------------------------------------------- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -823,26 +823,19 @@ document.getElementById('login-form').onsubmit = async function(e) {
         });
 
         const result = await res.json();
-        if (result.success) {
-            localStorage.setItem('mail_user', username);
-            window.USERNAME = username;
-            CURRENT_USERNAME = username;
+if (result.status && (result.status === "success" || result.status === "created")) {
+    localStorage.setItem('mail_user', username);
+    window.USERNAME = username;
+    mail_user = username;
 
-            // ATTENZIONE: usa un ritardo minimo per dare tempo al DOM di completarsi
-            setTimeout(() => {
-                const loginPopup = document.getElementById('login-popup');
-                if (loginPopup) {
-                    loginPopup.style.display = 'none';
-                    loginPopup.remove();
-                } else {
-                    console.warn("login-popup non trovato");
-                }
-            }, 50); // anche 0 o 10 può bastare
+    const loginPopup = document.getElementById('login-popup');
+    if (loginPopup) loginPopup.remove();
 
-            alert(result.message || "Accesso eseguito");
-        } else {
-            alert(result.message || "Accesso negato");
-        }
+    alert("Login effettuato");
+} else {
+    alert(result.error || "Errore di autenticazione.");
+}
+
     } catch (err) {
         alert("Errore durante il login: " + err);
     }
