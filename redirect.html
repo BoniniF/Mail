@@ -79,7 +79,7 @@
 
     
     
-    <h1>Gmail Viewer ------------------------------------------------------------- </h1>
+    <h1>Gmail Viewer ------------------------------------------------------------------------------------------- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -815,26 +815,39 @@ document.getElementById('login-form').onsubmit = async function(e) {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
 
-    const res = await fetch('https://bonini.zya.me/mail/login.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, password})
-    });
+    try {
+        const res = await fetch('https://bonini.zya.me/mail/login.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
+        });
 
-    const result = await res.json();
-    if (result.success) {
-        localStorage.setItem('mail_user', username);
-        window.USERNAME = username;
-        mail_user = username;
+        const result = await res.json();
+        if (result.success) {
+            localStorage.setItem('mail_user', username);
+            window.USERNAME = username;
+            CURRENT_USERNAME = username;
 
-        const loginPopup = document.getElementById('login-popup');
-        if (loginPopup) loginPopup.remove();
+            // ATTENZIONE: usa un ritardo minimo per dare tempo al DOM di completarsi
+            setTimeout(() => {
+                const loginPopup = document.getElementById('login-popup');
+                if (loginPopup) {
+                    loginPopup.style.display = 'none';
+                    loginPopup.remove();
+                } else {
+                    console.warn("login-popup non trovato");
+                }
+            }, 50); // anche 0 o 10 può bastare
 
-        alert(result.message || "Logged in");
-    } else {
-        alert(result.message || "Accesso negato");
+            alert(result.message || "Accesso eseguito");
+        } else {
+            alert(result.message || "Accesso negato");
+        }
+    } catch (err) {
+        alert("Errore durante il login: " + err);
     }
 };
+
 
         
     </script>
