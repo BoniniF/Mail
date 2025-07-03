@@ -822,6 +822,7 @@ document.getElementById('login-form').onsubmit = async function(e) {
 
         document.getElementById('login-popup').style.display = 'none';
 document.getElementById('login-popup').remove();
+        alert(result.message || "logged in");
 
     } else {
         alert(result.message || "Accesso negato");
