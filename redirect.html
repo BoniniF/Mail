@@ -68,7 +68,7 @@
 </head>
 <body>
 
-<div id="login-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:9999;display:flex;justify-content:center;align-items:center;">
+<div id="login-popup" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:9999;display:flex;justify-content:center;align-items:center;">
     <form id="login-form" style="background:#fff;padding:30px;border-radius:8px;box-shadow:0 0 10px #000;">
         <h2>Login</h2>
         <input type="text" id="username" placeholder="Nome utente" required><br><br>
@@ -79,7 +79,7 @@
 
     
     
-    <h1>Gmail Viewer ------ </h1>
+    <h1>Gmail Viewer ----------- </h1>
 
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
@@ -816,7 +816,7 @@ document.getElementById('login-form').onsubmit = async function(e) {
     if (result.success) {
         localStorage.setItem('mail_user', username);
         window.USERNAME = username;
-        document.getElementById('login-modal').remove();
+        document.getElementById('login-popup').remove();
 
         CURRENT_USERNAME = nomeUtenteInserito;
 
