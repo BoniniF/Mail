@@ -260,7 +260,12 @@ const YAHOO_BACKEND = './yahoo.php';
 };
 
         
-        
+        window.addEventListener('DOMContentLoaded', async function() {
+    const mailUser = localStorage.getItem('mail_user');
+    if (mailUser && gapiInited && gapi.client.getToken && gapi.client.getToken()) {
+        await listMessages();
+    }
+});
 
 
 async function exchangeYahooCodeForToken(code) {
@@ -894,6 +899,11 @@ if (result.status && (result.status === "success" || result.status === "created"
 
 } else {
     alert(result.error || "Errore di autenticazione.");
+}
+
+        if (gapiInited && gapi.client.getToken && gapi.client.getToken()) {
+    // Sei già autenticato Google, carica le mail Gmail
+    await listMessages();
 }
 
     } catch (err) {
