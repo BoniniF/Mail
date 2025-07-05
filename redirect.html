@@ -858,9 +858,11 @@ if (result.status && (result.status === "success" || result.status === "created"
     localStorage.setItem('mail_user', username);
     window.USERNAME = username;
     mail_user = username;
-
+    
     const hudDiv = document.getElementById('hud-username');
-   if(hudDiv) {
+   await loadSavedEmails();
+    
+    if(hudDiv) {
       hudDiv.innerHTML = username;
       hudDiv.style.display = 'block';
    }
@@ -877,6 +879,55 @@ if (result.status && (result.status === "success" || result.status === "created"
     }
 };
 
+        
+async function loadSavedEmails() {
+    const username = localStorage.getItem('mail_user');
+    if (!username) return;
+
+    const res = await fetch('./mail_storage_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'list', username })
+    });
+    const files = await res.json();
+    if (!Array.isArray(files) || files.length === 0) return;
+
+    // Costruisci HTML archivio e inserisci sopra le altre email
+    let html = '<h2>Archivio mail salvate</h2>';
+    for (const file of files) {
+        const fileId = 'saved-' + file.name.replace(/[^a-z0-9\-_]/gi, '_');
+        html += `
+            <div class="email" id="${fileId}">
+                <strong>File:</strong> ${file.name}<br>
+                <button onclick="expandSavedEmail('${file.name}', '${fileId}')">Espandi</button>
+                <div class="email-body" style="display:none;"></div>
+            </div>
+        `;
+    }
+    const container = document.getElementById('content');
+    container.innerHTML = html + container.innerHTML;
+}
+
+// Espandi il singolo file salvato (on demand)
+window.expandSavedEmail = async function(filename, fileId) {
+    const username = localStorage.getItem('mail_user');
+    const div = document.getElementById(fileId);
+    const bodyDiv = div.querySelector('.email-body');
+    const btn = div.querySelector('button');
+    if (bodyDiv.style.display !== 'none') {
+        bodyDiv.style.display = 'none'; btn.innerText = 'Espandi'; return;
+    }
+    bodyDiv.innerHTML = 'Caricamento...';
+    btn.innerText = 'Riduci';
+    const res = await fetch('./mail_storage_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'get', username, filename })
+    });
+    const data = await res.json();
+    bodyDiv.innerHTML = data.html || 'Errore.';
+    bodyDiv.style.display = 'block';
+}
 
         
     </script>
