@@ -3,236 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <title>BoniniF mail storage</title>
-    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #10330a;
-            margin: 0;
-            padding: 20px;
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #10330a; color: #013220; }
+        #login-popup {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: flex;
+            justify-content: center; align-items: center; z-index: 9999;
         }
-        button {
-            padding: 8px 16px;
-            border: none;
-            background-color: #4285F4;
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
-            margin: 5px;
-        }
-        button:hover { background-color: #357AE8; }
-        .tab-btn {
-            border: none;
-            background: transparent;
-            font-size: 1.1em;
-            padding: 12px 18px;
-            cursor: pointer;
-        }
-        .tab-btn.active {
-            background: #013220;
-            color: #fff;
-            border-radius: 8px 8px 0 0;
+        #login-form {
+            background: rgba(255,255,255,0.3); padding: 30px;
+            border-radius: 35px; box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
         }
         #tabs-bar {
-            background: rgba(255,255,255,0.3);
-            border-radius: 12px;
-            overflow: auto;
-            display: flex;
-            justify-content: center;
-            margin: 22px 0;
+            background: rgba(255,255,255,0.3); border-radius: 12px;
+            overflow: auto; display: flex; justify-content: center; margin: 22px 0;
         }
-        #hud-username {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255,255,255,0.3);
-            color: #013220;
-            padding: 8px 22px 12px 22px;
-            border-radius: 0 0 25px 25px;
-            box-shadow: 0 2px 12px rgba(0,0,0,.14);
-            backdrop-filter: blur(4px);
-            font-size: 2em;
-            z-index: 10000;
+        .tab-btn {
+            border: none; background: transparent; font-size: 1.1em;
+            padding: 12px 18px; cursor: pointer;
         }
+        .tab-btn.active {
+            background: #013220; color: #fff; border-radius: 8px 8px 0 0;
+        }
+        .email { background: white; border: 1px solid #ccc;
+            border-radius: 8px; padding: 10px; margin-bottom: 15px; }
+        .email-body { border: 1px solid #ccc; padding: 10px;
+            background: #fafafa; margin-top: 10px; overflow-x: auto; }
     </style>
 </head>
 <body>
-    <div id="login-popup" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;justify-content:center;align-items:center;">
-        <form id="login-form" style="background:rgba(255,255,255,0.3); padding:30px; border-radius:35px; box-shadow:0 0 10px rgba(0,0,0,0.2); backdrop-filter:blur(4px);">
-            <h2 style="color:#013220;">Login</h2>
-            <input type="text" id="username" placeholder="Username" required style="margin-bottom:10px;"><br>
-            <input type="password" id="password" placeholder="Password" required style="margin-bottom:20px;"><br>
-            <button type="submit">⇮</button>
-        </form>
-    </div>
 
-    <div id="hud-username"></div>
+<div id="login-popup">
+    <form id="login-form">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username" required><br>
+        <input type="password" id="password" placeholder="Password" required><br>
+        <button type="submit">⇮</button>
+    </form>
+</div>
 
-    <div id="tabs-bar"></div>
-    <div id="tabs-content"></div>
+<div id="hud-username" style="
+    display:none; position:fixed; top:0; left:50%; transform:translateX(-50%);
+    background: rgba(255,255,255,0.3); padding:8px 22px; border-radius:0 0 25px 25px;
+    box-shadow:0 2px 12px rgba(0,0,0,.14); backdrop-filter:blur(4px); font-size:2em; z-index:10000;">
+</div>
 
-    <script>
-        const tabs = [];
-        let mail_user = null;
+<div id="tabs-bar"></div>
+<div id="tabs-content"></div>
 
-        function renderTabs() {
-            const bar = document.getElementById('tabs-bar');
-            bar.innerHTML = '';
-            tabs.forEach(tab => {
-                const btn = document.createElement('button');
-                btn.textContent = tab.label;
-                btn.className = 'tab-btn';
-                btn.onclick = () => selectTab(tab.id);
-                bar.appendChild(btn);
-            });
-            const plus = document.createElement('button');
-            plus.textContent = '+';
-            plus.className = 'tab-btn';
-            plus.onclick = openTabSelector;
-            bar.appendChild(plus);
+<script>
+const tabs = [];
+
+function addTab(type, label, loaderFn) {
+    const id = `tab-${type}-${tabs.length}`;
+    const tab = { id, type, label, loaded: false, loader: loaderFn };
+    tabs.push(tab);
+    renderTabs();
+    selectTab(id);
+}
+
+function renderTabs() {
+    const bar = document.getElementById('tabs-bar');
+    bar.innerHTML = '';
+    tabs.forEach(tab => {
+        const btn = document.createElement('button');
+        btn.textContent = tab.label;
+        btn.className = 'tab-btn';
+        btn.onclick = () => selectTab(tab.id);
+        bar.appendChild(btn);
+    });
+    const plus = document.createElement('button');
+    plus.textContent = '+';
+    plus.className = 'tab-btn';
+    plus.onclick = openTabSelector;
+    bar.appendChild(plus);
+}
+
+function selectTab(tabId) {
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab) return;
+    const container = document.getElementById('tabs-content');
+    if (!tab.loaded) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;">Caricamento...</div>';
+        tab.loader(tab, container).then(() => { tab.loaded = true; });
+    } else {
+        container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
+    }
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const idx = tabs.indexOf(tab);
+    const bar = document.getElementById('tabs-bar');
+    if (bar && bar.children[idx]) bar.children[idx].classList.add('active');
+}
+
+function openTabSelector() {
+    const label = prompt('Etichetta scheda?') || 'Nuova';
+    const tab = {
+        id: `tab-custom-${tabs.length}`,
+        type: 'custom',
+        label,
+        loaded: false,
+        loader: async function(tab, container) {
+            const tipo = prompt('Tipo di scheda: gmail, outlook, imap');
+            if (tipo === 'gmail') { tab.loader = loadGmailTab; tab.type = 'gmail'; await loadGmailTab(tab, container); }
+            else if (tipo === 'outlook') { tab.loader = loadOutlookTab; tab.type = 'outlook'; await loadOutlookTab(tab, container); }
+            else if (tipo === 'imap') { tab.loader = loadImapTab; tab.type = 'imap'; await loadImapTab(tab, container); }
+            else container.innerHTML = "Tipo non riconosciuto.";
+        }
+    };
+    tabs.push(tab);
+    renderTabs();
+    selectTab(tab.id);
+}
+
+async function loadArchivioTab(tab, container) {
+    container.innerHTML = '<div id="' + tab.id + '-content">📥 Archivio caricato (mock)</div>';
+}
+async function loadGmailTab(tab, container) {
+    container.innerHTML = '<div id="' + tab.id + '-content">📧 Gmail caricato (mock)</div>';
+}
+async function loadOutlookTab(tab, container) {
+    container.innerHTML = '<div id="' + tab.id + '-content">📨 Outlook caricato (mock)</div>';
+}
+async function loadImapTab(tab, container) {
+    container.innerHTML = '<div id="' + tab.id + '-content">🗄️ IMAP caricato (mock)</div>';
+}
+
+document.getElementById('login-form').onsubmit = async function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    // MOCK login
+    if (username && password) {
+        localStorage.setItem('mail_user', username);
+        localStorage.setItem('mail_authenticated', '1');
+        document.getElementById('login-popup')?.remove();
+
+        const hudDiv = document.getElementById('hud-username');
+        if (hudDiv) {
+            hudDiv.innerHTML = username;
+            hudDiv.style.display = 'block';
         }
 
-        function selectTab(tabId) {
-            const tab = tabs.find(t => t.id === tabId);
-            if (!tab) return;
-            const container = document.getElementById('tabs-content');
-            if (!tab.loaded) {
-                container.innerHTML = '<div style="text-align:center;padding:40px;">Caricamento...</div>';
-                tab.loader(tab, container).then(() => { tab.loaded = true; });
-            } else {
-                container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
-            }
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            const bar = document.getElementById('tabs-bar');
-            const idx = tabs.indexOf(tab);
-            if (bar && bar.children[idx]) bar.children[idx].classList.add('active');
+        addTab('archivio', 'Archivio', loadArchivioTab);
+
+        // Simulate Gmail/Outlook token
+        if (Math.random() > 0.5) addTab('gmail', 'Gmail', loadGmailTab);
+        if (Math.random() > 0.5) addTab('outlook', 'Outlook', loadOutlookTab);
+    }
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
+        document.getElementById('login-popup')?.remove();
+        const hudDiv = document.getElementById('hud-username');
+        if (hudDiv) {
+            hudDiv.innerHTML = localStorage.getItem('mail_user');
+            hudDiv.style.display = 'block';
         }
+        addTab('archivio', 'Archivio', loadArchivioTab);
+        if (Math.random() > 0.5) addTab('gmail', 'Gmail', loadGmailTab);
+        if (Math.random() > 0.5) addTab('outlook', 'Outlook', loadOutlookTab);
+    }
+});
+</script>
 
-        function addTab(type, label, loaderFn) {
-            const id = `tab-${type}-${tabs.length}`;
-            tabs.push({ id, type, label, loaded: false, loader: loaderFn });
-            renderTabs();
-            selectTab(id);
-        }
-
-        function openTabSelector() {
-            const label = prompt('Etichetta scheda?');
-            const tab = {
-                id: `tab-custom-${tabs.length}`,
-                type: 'custom',
-                label: label || 'Nuova',
-                loaded: false,
-                loader: async function(tab, container) {
-                    const tipo = prompt('Tipo di scheda: gmail, outlook, imap');
-                    if (tipo === 'gmail') {
-                        tab.loader = loadGmailTab;
-                        tab.type = 'gmail';
-                        await loadGmailTab(tab, container);
-                    } else if (tipo === 'outlook') {
-                        tab.loader = loadOutlookTab;
-                        tab.type = 'outlook';
-                        await loadOutlookTab(tab, container);
-                    } else if (tipo === 'imap') {
-                        tab.loader = loadImapTab;
-                        tab.type = 'imap';
-                        await loadImapTab(tab, container);
-                    } else {
-                        container.innerHTML = "Tipo non riconosciuto.";
-                    }
-                }
-            };
-            tabs.push(tab);
-            renderTabs();
-            selectTab(tab.id);
-        }
-
-        async function loadArchivioTab(tab, container) {
-            container.innerHTML = `<div id="${tab.id}-content">Caricamento archivio...</div>`;
-            const div = document.getElementById(`${tab.id}-content`);
-            const res = await fetch('./mail_storage_api.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'list', username: mail_user })
-            });
-            const files = await res.json();
-            if (!Array.isArray(files) || files.length === 0) {
-                div.innerHTML = 'Nessuna email salvata.';
-                return;
-            }
-            div.innerHTML = files.map(file => `<div><strong>${file.name}</strong></div>`).join('');
-        }
-
-        async function loadGmailTab(tab, container) {
-            container.innerHTML = `<div id="${tab.id}-content">Gmail: caricamento in corso...</div>`;
-        }
-
-        async function loadOutlookTab(tab, container) {
-            container.innerHTML = `<div id="${tab.id}-content">Outlook: caricamento in corso...</div>`;
-        }
-
-        async function loadImapTab(tab, container) {
-            container.innerHTML = `<div id="${tab.id}-content">IMAP: caricamento in corso...</div>`;
-        }
-
-        document.getElementById('login-form').onsubmit = async function(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-
-            try {
-                const res = await fetch('./login.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const result = await res.json();
-                if (result.status && (result.status === "success" || result.status === "created")) {
-                    localStorage.setItem('mail_user', username);
-                    localStorage.setItem('mail_authenticated', '1');
-                    mail_user = username;
-
-                    const hudDiv = document.getElementById('hud-username');
-                    hudDiv.innerHTML = username;
-                    hudDiv.style.display = 'block';
-
-                    const loginPopup = document.getElementById('login-popup');
-                    if (loginPopup) loginPopup.remove();
-
-                    addTab('archivio', 'Archivio', loadArchivioTab);
-
-                    if (window.gapi && gapi.client.getToken && gapi.client.getToken()) {
-                        addTab('gmail', 'Gmail', loadGmailTab);
-                    }
-                    if (localStorage.getItem('outlook_access_token')) {
-                        addTab('outlook', 'Outlook', loadOutlookTab);
-                    }
-                } else {
-                    alert(result.error || "Errore di autenticazione.");
-                }
-            } catch (err) {
-                alert("Errore durante il login: " + err);
-            }
-        };
-
-        window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
-                mail_user = localStorage.getItem('mail_user');
-                document.getElementById('login-popup')?.remove();
-                const hud = document.getElementById('hud-username');
-                hud.innerHTML = mail_user;
-                hud.style.display = 'block';
-                addTab('archivio', 'Archivio', loadArchivioTab);
-                if (window.gapi && gapi.client.getToken && gapi.client.getToken()) {
-                    addTab('gmail', 'Gmail', loadGmailTab);
-                }
-                if (localStorage.getItem('outlook_access_token')) {
-                    addTab('outlook', 'Outlook', loadOutlookTab);
-                }
-            }
-        });
-    </script>
 </body>
 </html>
