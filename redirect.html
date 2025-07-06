@@ -338,24 +338,83 @@ window.gapiLoaded = function() {
     gapi.load('client', initializeGapiClient);
 };
 
+// Sostituisci la funzione downloadSelectedEmails con questa versione migliorata:
+
 async function downloadSelectedEmails(type) {
     const ids = getSelectedEmailIds();
     if (!ids.length) {
         alert('Nessuna email selezionata.');
         return;
     }
+    // Trova la tab attiva
+    const activeTab = tabs.find(t => t.active);
+
     for (const id of ids) {
         const container = document.getElementById(`email-${id}`);
         let subject = "email";
         if (container) {
-            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            // Prova a estrarre l'oggetto
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
             subject = subjMatch ? subjMatch[1] : "email";
-            // Espandi PRIMA di scaricare
-            await expandEmail(id, sanitizeFilename(subject));
-            if (type === 'html') exportSingleToHTML('email-' + id, sanitizeFilename(subject));
-            // Se vuoi il PDF aggiungi qui la logica come già facevi
+
+            // Trova il div con il corpo della mail
+            const bodyDiv = container.querySelector('.email-body');
+            let htmlReady = false;
+
+            // Se il corpo NON è visibile o vuoto, caricalo in modo invisibile
+            if (!bodyDiv || !bodyDiv.innerHTML || bodyDiv.innerHTML === '' || bodyDiv.innerHTML === 'Caricamento...') {
+                if (activeTab.type === 'gmail') {
+                    // Carica il corpo da Gmail (come fa expandCollapseGmail, ma senza mostrare)
+                    const msg = await gapi.client.gmail.users.messages.get({
+                        'userId': 'me',
+                        'id': id
+                    });
+                    const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+                    bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
+                    htmlReady = true;
+                } else if (activeTab.type === 'outlook') {
+                    // Carica il corpo da Outlook (solo se necessario, qui semplificato)
+                    // Se il corpo non è stato caricato, puoi implementare una fetch API a Microsoft Graph /messages/{id}
+                    // Ma se già incluso, lascia pure così
+                    htmlReady = true;
+                }
+                // Puoi aggiungere altri provider qui...
+            } else {
+                htmlReady = true;
+            }
+
+            // Ora puoi esportare in HTML
+            if (type === 'html' && htmlReady) {
+                exportSingleToHTML('email-' + id, sanitizeFilename(subject));
+            }
         }
     }
+}
+
+// Funzione di export singolo (come nel tuo codice)
+function exportSingleToHTML(divId, filename) {
+    const div = document.getElementById(divId);
+    if (!div) return;
+    const bodyDiv = div.querySelector('.email-body');
+    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename + ".html";
+    link.click();
+}
+
+// Funzione di export singolo (come nel tuo codice)
+function exportSingleToHTML(divId, filename) {
+    const div = document.getElementById(divId);
+    if (!div) return;
+    const bodyDiv = div.querySelector('.email-body');
+    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename + ".html";
+    link.click();
 }
 window.downloadSelectedEmails = downloadSelectedEmails;
     
