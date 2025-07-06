@@ -134,7 +134,7 @@ let username, mail_user;
 const selectedEmails = new Set();
 
 const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
-const OUTLOOK_REDIRECT_URI = window.location.origin + window.location.pathname; // questa pagina
+const OUTLOOK_REDIRECT_URI = 'https://bonini.hstn.me/mail'; // questa pagina
 const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
 const msalConfig = {
     auth: {
