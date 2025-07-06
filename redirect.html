@@ -347,37 +347,37 @@ async function downloadSelectedEmails(type) {
 
     for (const id of ids) {
         const container = document.getElementById(`email-${id}`);
-        let subject = "email";
         if (!container) continue;
         // Estrai oggetto
+        let subject = "email";
         const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
         subject = subjMatch ? subjMatch[1] : "email";
         const filename = sanitizeFilename(subject);
         const bodyDiv = container.querySelector('.email-body');
-
-        // GMAIL: FORZA SEMPRE IL CARICAMENTO DEL CORPO se non c'è, e ATTENDI che sia popolato
+        
+        // GMAIL: sempre fetch del corpo, e cancella dopo
         if (activeTab.type === 'gmail') {
-            // Se non c'è HTML nel bodyDiv o contiene solo placeholder
-            if (
-                !bodyDiv.innerHTML || 
-                bodyDiv.innerHTML.trim() === '' || 
-                bodyDiv.innerHTML.trim() === 'Caricamento...' || 
-                bodyDiv.innerHTML.trim() === '<i>Nessun contenuto</i>'
-            ) {
-                // fetch completo del messaggio, come fa expandCollapseGmail
-                bodyDiv.innerHTML = 'Caricamento...';
+            bodyDiv.innerHTML = 'Caricamento...';
+            try {
                 const msg = await gapi.client.gmail.users.messages.get({
                     'userId': 'me',
                     'id': id
                 });
                 const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
                 bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
+            } catch (e) {
+                bodyDiv.innerHTML = '<i>Errore nel caricamento</i>';
             }
         }
 
         // Ora esporta (sia Outlook che Gmail)
         if (type === 'html') {
             exportSingleToHTML('email-' + id, filename);
+        }
+
+        // Dopo l'export, svuota il contenuto così non resta nel DOM
+        if (activeTab.type === 'gmail' && bodyDiv) {
+            bodyDiv.innerHTML = '';
         }
     }
 }
