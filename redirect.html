@@ -129,7 +129,6 @@
 <script src="https://apis.google.com/js/api.js" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-/* --- GLOBALS --- */
 let username, mail_user;
 const selectedEmails = new Set();
 
@@ -138,13 +137,11 @@ const tabs = [
         id: "tab-archivio-0",
         type: "archivio",
         label: "Archivio",
-        loaded: false,
-        loader: loadArchivioTab
+        loader: loadArchivioTab,
+        alwaysReload: true // così ogni volta che selezioni ricarica sempre l'archivio
     }
-    // Le altre tab si aggiungono dinamicamente
 ];
 
-// --- Render Tabs ---
 function renderTabs() {
     const bar = document.getElementById('tabs-bar');
     bar.innerHTML = '';
@@ -155,7 +152,6 @@ function renderTabs() {
         btn.onclick = () => selectTab(tab.id);
         bar.appendChild(btn);
     });
-    // Pulsante +
     const plus = document.createElement('button');
     plus.textContent = '+';
     plus.className = 'tab-btn';
@@ -168,13 +164,17 @@ function selectTab(tabId) {
     renderTabs();
     const tab = tabs.find(t => t.id === tabId);
     const container = document.getElementById('tabs-content');
-    if (!tab.loaded) {
-        container.innerHTML = '<div style="text-align:center;padding:40px;">Caricamento...</div>';
-        tab.loader(tab, container).then(() => { tab.loaded = true; });
+    if (tab.alwaysReload) {
+        tab.loader(tab, container);
     } else {
-        container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
+        if (!tab.loaded) {
+            tab.loader(tab, container).then(() => { tab.loaded = true; });
+        } else {
+            container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
+        }
     }
 }
+
 function openTabSelector() {
     const choice = prompt('Aggiungi: gmail, outlook, imap');
     if (choice === 'gmail') addTab('gmail', 'Gmail', loadGmailTab);
@@ -183,12 +183,12 @@ function openTabSelector() {
 }
 function addTab(type, label, loaderFn) {
     const id = `tab-${type}-${tabs.length}`;
-    tabs.push({ id, type, label, loaded: false, loader: loaderFn });
+    tabs.push({ id, type, label, loader: loaderFn, loaded: false });
     selectTab(id);
     renderTabs();
 }
 
-// --- Loader per ogni tab ---
+// Loader per ogni tab
 async function loadArchivioTab(tab, container) {
     const contentId = tab.id + '-content';
     container.innerHTML = `<div id="${contentId}"></div>`;
@@ -209,9 +209,7 @@ async function loadImapTab(tab, container) {
     container.innerHTML = `<div id="${contentId}">Compila sopra i dati IMAP.</div>`;
 }
 
-// --- On Load/Ready ---
 window.addEventListener('DOMContentLoaded', function() {
-    // Autologin
     if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
         username = mail_user = localStorage.getItem('mail_user');
         document.getElementById('login-popup')?.remove();
@@ -220,7 +218,6 @@ window.addEventListener('DOMContentLoaded', function() {
             hudDiv.innerHTML = username;
             hudDiv.style.display = 'block';
         }
-        tabs[0].loaded = false; // Archivio deve potersi ricaricare
         renderTabs();
         selectTab(tabs[0].id);
     } else {
@@ -228,7 +225,6 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// --- LOGIN FORM ---
 document.getElementById('login-form').onsubmit = async function(e) {
     e.preventDefault();
     username = document.getElementById('username').value.trim();
@@ -251,7 +247,6 @@ document.getElementById('login-form').onsubmit = async function(e) {
                 hudDiv.style.display = 'block';
             }
             document.getElementById('login-popup')?.remove();
-            tabs[0].loaded = false;
             renderTabs();
             selectTab(tabs[0].id);
         } else {
@@ -262,7 +257,6 @@ document.getElementById('login-form').onsubmit = async function(e) {
     }
 };
 
-// --- Archivio ---
 async function loadSavedEmails(containerId = 'tab-archivio-0-content') {
     const div = document.getElementById(containerId);
     const user = localStorage.getItem('mail_user');
@@ -313,12 +307,6 @@ window.expandSavedEmail = async function(filename, fileId) {
     bodyDiv.style.display = 'block';
 };
 
-// --- Gmail, Outlook, IMAP (incolla qui le funzioni listMessages, fetchOutlookMessages ecc. come nei tuoi esempi) ---
-
-// ... (omesso per brevità, vedi i tuoi script precedenti per funzioni Gmail/Outlook/IMAP)
-// Ricorda di modificare ognuna affinché accetti come primo parametro containerId, e scriva nell'elemento con quell'id
-
-// --- Helpers ---
 function parseStorageFilename(filename) {
     const sep = '.----------------.';
     const name = filename.replace(/\.html$/i, '');
@@ -329,7 +317,6 @@ function parseStorageFilename(filename) {
         from: (parts[2] || '').trim()
     };
 }
-// ... incolla qui eventuali altri helpers che servono (sanitizeFilename, decodeBase64Url, ecc.)
 
 </script>
 <!-- Caricamento librerie -->
