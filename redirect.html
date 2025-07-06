@@ -336,7 +336,9 @@ window.handleCredentialResponse = function(response) {
 // GAPI INIT
 window.gapiLoaded = function() {
     gapi.load('client', initializeGapiClient);
-};
+    };
+
+
 async function downloadSelectedEmails(type) {
     const ids = getSelectedEmailIds();
     if (!ids.length) {
@@ -345,6 +347,25 @@ async function downloadSelectedEmails(type) {
     }
     const activeTab = tabs.find(t => t.active);
 
+    // 1. Espandi tutte le email selezionate PRIMA di scaricare
+    if (activeTab.type === "gmail") {
+        for (const id of ids) {
+            const container = document.getElementById(`email-${id}`);
+            if (!container) continue;
+            let subject = "email";
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            const filename = sanitizeFilename(subject);
+
+            // Espandi SEMPRE prima di scaricare, come in mail_storage_imap.html
+            await window.expandCollapseGmail(id, container.querySelector('.expand-collapse'), filename);
+            // Attendi che sia popolato (3s max)
+            const bodyDiv = container.querySelector('.email-body');
+            await waitForBodyLoaded(bodyDiv, 3000);
+        }
+    }
+
+    // 2. Scarica le email ora che sono caricate
     for (const id of ids) {
         const container = document.getElementById(`email-${id}`);
         if (!container) continue;
@@ -352,17 +373,27 @@ async function downloadSelectedEmails(type) {
         const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
         subject = subjMatch ? subjMatch[1] : "email";
         const filename = sanitizeFilename(subject);
-
-        if (activeTab.type === "gmail") {
-            // Espandi PRIMA di salvare/scaricare!
-            await expandEmail(id, filename);
-        }
-
         if (type === 'html') {
             exportSingleToHTML('email-' + id, filename);
         }
     }
+
+    // 3. (Opzionale) Richiudi tutte le email che hai aperto (solo Gmail)
+    if (activeTab.type === "gmail") {
+        for (const id of ids) {
+            const container = document.getElementById(`email-${id}`);
+            if (!container) continue;
+            const bodyDiv = container.querySelector('.email-body');
+            const expandBtn = container.querySelector('.expand-collapse');
+            // Richiudi solo se aperta
+            if (bodyDiv && bodyDiv.style.display !== 'none') {
+                await window.expandCollapseGmail(id, expandBtn, sanitizeFilename(subject));
+            }
+        }
+    }
 }
+
+    
 
 // Helper: aspetta che bodyDiv sia popolato, massimo timeout ms
 async function waitForBodyLoaded(bodyDiv, timeout = 3000) {
@@ -678,31 +709,6 @@ function onEmailCheckboxChange(checkbox) {
     }
     renderBulkActions();
 }
-
-    async function expandEmail(messageId, filename) {
-    const container = document.getElementById(`email-${messageId}`);
-    const bodyDiv = container.querySelector('.email-body');
-    const expandBtn = container.querySelector('.expand-collapse');
-    if (bodyDiv.style.display !== 'none' && bodyDiv.innerHTML.trim() !== '') {
-        // Already expanded and loaded
-        return;
-    }
-    bodyDiv.innerHTML = 'Caricamento...';
-    // Carica il messaggio completo da Gmail
-    const msg = await gapi.client.gmail.users.messages.get({
-        'userId': 'me',
-        'id': messageId
-    });
-    const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-    bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
-    bodyDiv.style.display = 'block';
-    if(expandBtn) {
-        expandBtn.textContent = '▼';
-        expandBtn.setAttribute('aria-expanded', 'true');
-    }
-}
-window.expandEmail = expandEmail;
-    
 function renderBulkActions() {
     const checkboxes = document.querySelectorAll('.email-checkbox');
     const bulkActions = document.getElementById('bulk-actions');
