@@ -142,6 +142,7 @@
     <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
     <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
     <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
+    <button onclick="saveSelectedToAccount()">Salva selezionate su account</button>
 </div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -331,6 +332,28 @@ window.handleCredentialResponse = function(response) {
 window.gapiLoaded = function() {
     gapi.load('client', initializeGapiClient);
 };
+
+async function downloadSelectedEmails(type) {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    for (const id of ids) {
+        const container = document.getElementById(`email-${id}`);
+        let subject = "email";
+        if (container) {
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            // Espandi PRIMA di scaricare
+            await expandEmail(id, sanitizeFilename(subject));
+            if (type === 'html') exportSingleToHTML('email-' + id, sanitizeFilename(subject));
+            // Se vuoi il PDF aggiungi qui la logica come già facevi
+        }
+    }
+}
+window.downloadSelectedEmails = downloadSelectedEmails;
+    
 async function initializeGapiClient() {
     await gapi.client.init({
         apiKey: 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI',
@@ -670,6 +693,26 @@ function escapeHtml(text) {
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[m])) : '';
 }
+async function saveSelectedToAccount() {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    for (const id of ids) {
+        const container = document.getElementById(`email-${id}`);
+        let subject = "email";
+        if (container) {
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            // Espandi PRIMA di salvare
+            await expandEmail(id, sanitizeFilename(subject));
+            await saveEmailToAccount(sanitizeFilename(subject), 'email-'+id);
+        }
+    }
+    alert('Email selezionate salvate su account!');
+}
+window.saveSelectedToAccount = saveSelectedToAccount;
 function parseStorageFilename(filename) {
     const sep = '.----------------.';
     const name = filename.replace(/\.html$/i, '');
