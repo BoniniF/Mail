@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <title>BoniniF mail storage</title>
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     <style>
@@ -10,9 +10,6 @@
             background-color: #10330a;
             margin: 0;
             padding: 20px;
-        }
-        h1 {
-            color: #333;
         }
         button {
             padding: 8px 16px;
@@ -23,1050 +20,219 @@
             border-radius: 4px;
             margin: 5px;
         }
-        button:hover {
-            background-color: #357AE8;
+        button:hover { background-color: #357AE8; }
+        .tab-btn {
+            border: none;
+            background: transparent;
+            font-size: 1.1em;
+            padding: 12px 18px;
+            cursor: pointer;
         }
-        #content {
-            margin-top: 20px;
+        .tab-btn.active {
+            background: #013220;
+            color: #fff;
+            border-radius: 8px 8px 0 0;
         }
-        .email {
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 15px;
-            position: relative;
+        #tabs-bar {
+            background: rgba(255,255,255,0.3);
+            border-radius: 12px;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            margin: 22px 0;
         }
-        .email strong {
-            color: #555;
+        #hud-username {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.3);
+            color: #013220;
+            padding: 8px 22px 12px 22px;
+            border-radius: 0 0 25px 25px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.14);
+            backdrop-filter: blur(4px);
+            font-size: 2em;
+            z-index: 10000;
         }
-        .email-body {
-            border: 1px solid #ccc;
-            padding: 10px;
-            background: white;
-            overflow-x: auto;
-            margin-top: 10px;
-        }
-        #bulk-actions {
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        #bulk-actions label {
-            margin-right: 20px;
-        }
-        .email-checkbox {
-            margin-right: 8px;
-            transform: scale(1.2);
-        }
-
-        #imap-content .email { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px; margin-bottom: 15px; }
-#imap-content .email-body { border: 1px solid #ccc; padding: 10px; background: #fafafa; margin-top: 10px; overflow-x: auto; }
-    
-    #tabs-bar { background:rgba(255,255,255,0.3); border-radius:12px; overflow:auto; }
-.tab-btn { border:none; background:transparent; font-size:1.1em; padding:12px 18px; cursor:pointer; }
-.tab-btn.active { background:#013220; color:#fff; border-radius:8px 8px 0 0; }
-    
     </style>
 </head>
 <body>
-
-<div id="login-popup" style="position:fixed;top:0;left:0;width:100%;height:100%;background:;z-index:9999;display:flex;justify-content:center;align-items:center;">
-    <form id="login-form" style="background:rgba(255,255,255,0.3); padding:30px; border-radius:35px; box-shadow:0 0 10px rgba(0,0,0,0.2); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);">
-        <h2 style="color:#013220;">Login</h2>
-        <input type="text" id="username" placeholder="Username" required style="background:rgba(255,255,255,0.5); border:none; padding:8px; border-radius:4px; color:#013220; margin-bottom:10px;"><br>
-        <input type="password" id="password" placeholder="Password" required style="background:rgba(255,255,255,0.5); border:none; padding:8px; border-radius:4px; color:#013220; margin-bottom:20px;"><br>
-        <button 
-    type="submit"
-    style="
-        background:#013220;
-        color:#fff;
-        border:none;
-        padding:7px 15px;
-        border-radius:6px;
-        cursor:pointer;font-size:23px;
-
-        display:block;margin-left:auto;margin-right:auto;"
->⇮</button>
-    </form>
-</div>
-
-<div id="hud-username" style="
-    display:none;
-    position:fixed;
-    top:0;
-    left:50%;
-    transform:translateX(-50%);
-    
-    background: rgba(255,255,255,0.3);
-    color:#013220; 
-    padding:8px 22px 12px 22px;
-
-    border-radius:0 0 25px 25px;
-    
-    box-shadow:0 2px 12px rgba(0,0,0,.14);
-
-    backdrop-filter:blur(4px); 
-   -webkit-backdrop-filter:blur(4px);
-
-   font-size:2em; 
-   z-index:10000;">
-</div>
-    
-    
-
-<h2>Altri servizi email (IMAP)</h2>
-<form id="imap-login-form" style="margin-bottom: 20px;">
-    <label>Email: <input type="email" id="imap-email" required></label>
-    <label>Password: <input type="password" id="imap-password" required></label>
-    <label>Server IMAP: <input type="text" id="imap-host" placeholder="es. imap.libero.it" required></label>
-    <label>Porta: <input type="number" id="imap-port" value="993"></label>
-    <label>TLS: <input type="checkbox" id="imap-tls" checked></label>
-    <button type="submit">Connetti</button>
-</form>
-<div id="imap-content"></div>
-    
-    <div id="g_id_onload"
-         data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
+    <div id="login-popup" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;justify-content:center;align-items:center;">
+        <form id="login-form" style="background:rgba(255,255,255,0.3); padding:30px; border-radius:35px; box-shadow:0 0 10px rgba(0,0,0,0.2); backdrop-filter:blur(4px);">
+            <h2 style="color:#013220;">Login</h2>
+            <input type="text" id="username" placeholder="Username" required style="margin-bottom:10px;"><br>
+            <input type="password" id="password" placeholder="Password" required style="margin-bottom:20px;"><br>
+            <button type="submit">⇮</button>
+        </form>
     </div>
 
-    <div class="g_id_signin"
-         data-type="standard"
-         data-shape="rectangular"
-         data-theme="outline"
-         data-text="signin_with"
-         data-size="large">
-    </div>
+    <div id="hud-username"></div>
 
-    <div>
-        <button id="signout_button" style="display:none;">Disconnettiti</button>
-    <button id="outlook_login">Accedi con Outlook</button>
-    </div>
-
-    <!-- Bulk actions UI -->
-    <div id="bulk-actions" style="display:none;">
-        <input type="checkbox" id="select_all" /> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
-        <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
-        <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
-        <button onclick="downloadSelectedEmails('pdf')">Scarica PDF selezionate</button>
-        <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
-    </div>
-    
-    <div id="tabs-bar" style="display:flex;justify-content:center;margin:22px 0;">
-  <script>
-      // Ogni tab: { id, label, type, loaded, loader }
-const tabs = [];
-
-// Esempi di tipo: "archivio", "gmail", "outlook", "imap"
-function addTab(type, label, loaderFn) {
-    const id = `tab-${type}-${tabs.length}`;
-    tabs.push({ id, type, label, loaded: false, loader: loaderFn });
-    renderTabs();
-    selectTab(id);
-}
-
-function renderTabs() {
-    const bar = document.getElementById('tabs-bar');
-    bar.innerHTML = '';
-    tabs.forEach(tab => {
-        const btn = document.createElement('button');
-        btn.textContent = tab.label;
-        btn.className = 'tab-btn';
-        btn.onclick = () => selectTab(tab.id);
-        bar.appendChild(btn);
-    });
-    // Pulsante +
-    const plus = document.createElement('button');
-    plus.textContent = '+';
-    plus.className = 'tab-btn';
-    plus.onclick = openTabSelector;
-    bar.appendChild(plus);
-}
-
-function selectTab(tabId) {
-    const tab = tabs.find(t => t.id === tabId);
-    if (!tab) return;
-    // Mostra contenuto associato
-    const container = document.getElementById('tabs-content');
-    if (!tab.loaded) {
-        container.innerHTML = '<div style="text-align:center;padding:40px;">Caricamento...</div>';
-        tab.loader(tab, container).then(() => { tab.loaded = true; });
-    } else {
-        // Se già caricato, mostra il div (puoi usare innerHTML cache o DOM persistente)
-        container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
-    }
-    // Aggiorna selezione tab
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    const idx = tabs.indexOf(tab);
-    bar.children[idx].classList.add('active');
-}
-
-function openTabSelector() {
-    // Mostra popup o menu per scegliere Gmail/Outlook/IMAP/yahoo etc...
-    // Esempio base:
-    const choice = prompt('Aggiungi: gmail, outlook, imap');
-    if (choice === 'gmail') addTab('gmail', 'Gmail', loadGmailTab);
-    if (choice === 'outlook') addTab('outlook', 'Outlook', loadOutlookTab);
-    if (choice === 'imap') addTab('imap', 'IMAP', loadImapTab);
-}
-
-// Loader per ogni tab
-async function loadArchivioTab(tab, container) {
-    // Usa loadSavedEmails, ma scrivi dentro container (non #archivio)
-    container.innerHTML = '<div id="'+tab.id+'-content"></div>';
-    // ...carica archivio dentro div appena creato
-    await loadSavedEmails(tab.id + '-content');
-}
-async function loadGmailTab(tab, container) {
-    container.innerHTML = '<div id="'+tab.id+'-content"></div>';
-    await listMessages(tab.id + '-content');
-}
-async function loadOutlookTab(tab, container) {
-    container.innerHTML = '<div id="'+tab.id+'-content"></div>';
-    await fetchOutlookMessages(tab.id + '-content');
-}
-async function loadImapTab(tab, container) {
-    container.innerHTML = '<div id="'+tab.id+'-content"></div>';
-    // etc...
-}
-
-// Adatta loadSavedEmails e listMessages a ricevere un containerId dove scrivere
-      
-      
-  </script>
-</div>
-<div id="tabs-content">
-  <!-- I contenuti delle schede verranno inseriti qui -->
-</div>
-
-    <div id="content"></div>
-
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <div id="tabs-bar"></div>
+    <div id="tabs-content"></div>
 
     <script>
-        const msalConfig = {
-    auth: {
-        clientId: '5dcc792b-ad91-4d6b-88e8-44e149c4b885', // il vostro client ID
-        authority: "https://login.microsoftonline.com/common", 
-        redirectUri: "https://bonini.hstn.me/mail" // questa pagina stessa
-    }
-};
+        const tabs = [];
+        let mail_user = null;
 
-const msalInstance = new msal.PublicClientApplication(msalConfig);
+        function renderTabs() {
+            const bar = document.getElementById('tabs-bar');
+            bar.innerHTML = '';
+            tabs.forEach(tab => {
+                const btn = document.createElement('button');
+                btn.textContent = tab.label;
+                btn.className = 'tab-btn';
+                btn.onclick = () => selectTab(tab.id);
+                bar.appendChild(btn);
+            });
+            const plus = document.createElement('button');
+            plus.textContent = '+';
+            plus.className = 'tab-btn';
+            plus.onclick = openTabSelector;
+            bar.appendChild(plus);
+        }
 
-const loginRequest = {
-    scopes: ["Mail.Read", "offline_access", "User.Read"]
-};
-
-    const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com';
-    const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
-    const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
-    const SCOPES = 'https://mail.google.com/';
-
-    let tokenClient;
-    let gapiInited = false;
-    let gisInited = false;
-
-    const signoutButton = document.getElementById('signout_button');
-    const content = document.getElementById('content');
-    const bulkActions = document.getElementById('bulk-actions');
-    const selectAllCheckbox = document.getElementById('select_all');
-    const selectedCountSpan = document.getElementById('selected-count');
-
-    const selectedEmails = new Set();
-
-       
-addTab('archivio', 'Archivio', loadArchivioTab);
-
-const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
-const OUTLOOK_REDIRECT_URI = 'https://bonini.hstn.me/mail/'; // crea questa pagina per ricevere il token
-const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
-
-        const YAHOO_CLIENT_ID = 'dj0yJmk9bW81aDBsUWJyY044JmQ9WVdrOVUydFJSamhoVGt3bWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYy';
-const YAHOO_REDIRECT_URI = 'https://bonini.hstn.me/mail/';
-const YAHOO_SCOPE = 'mail-r';
-const YAHOO_BACKEND = './yahoo.php';
-
-
-
-        window.onload = async function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const yahooCode = urlParams.get('code');
-
-    // ✅ Check Yahoo
-    if (yahooCode) {
-        document.body.innerHTML = "Autenticazione Yahoo in corso...";
-        try {
-            const token = await exchangeYahooCodeForToken(yahooCode);
-            if (token) {
-                localStorage.setItem('yahoo_access_token', token);
-                window.history.replaceState({}, document.title, window.location.pathname);
-                fetchYahooEmails(token);
+        function selectTab(tabId) {
+            const tab = tabs.find(t => t.id === tabId);
+            if (!tab) return;
+            const container = document.getElementById('tabs-content');
+            if (!tab.loaded) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;">Caricamento...</div>';
+                tab.loader(tab, container).then(() => { tab.loaded = true; });
+            } else {
+                container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
             }
-        } catch (e) {
-            alert("Errore durante l'autenticazione Yahoo: " + e);
-        }
-        return;
-    }
-
-    // ✅ Check Outlook
-    if (window.location.hash.includes('access_token=')) {
-        const params = new URLSearchParams(window.location.hash.substr(1));
-        const accessToken = params.get('access_token');
-        if (accessToken) {
-            localStorage.setItem('outlook_access_token', accessToken);
-            fetch('./update_token.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        username: mail_user,
-        outlook_token: accessToken
-    })
-});
-
-            window.location.hash = '';
-            fetchOutlookMessages(accessToken);
-            return;
-        }
-    }
-
-    // ✅ Se già loggato Yahoo
-    const storedYahoo = localStorage.getItem('yahoo_access_token');
-    if (storedYahoo) {
-        fetchYahooEmails(storedYahoo);
-    }
-
-    // ✅ Se già loggato Outlook
-    const storedOutlook = localStorage.getItem('outlook_access_token');
-    if (storedOutlook) {
-        fetchOutlookMessages(storedOutlook);
-    }
-};
-
-        
-        window.addEventListener('DOMContentLoaded', async function() {
-    const mailUser = localStorage.getItem('mail_user');
-    if (mailUser && gapiInited && gapi.client.getToken && gapi.client.getToken()) {
-        await listMessages();
-    }
-});
-
-
-async function exchangeYahooCodeForToken(code) {
-    const res = await fetch(YAHOO_BACKEND, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ code })
-    });
-    const data = await res.json();
-    if (data.error) {
-        throw new Error(data.error_description || data.error);
-    }
-    return data.access_token;
-}
-async function fetchYahooEmails(token) {
-    document.getElementById('imap-content').innerHTML = "Caricamento email Yahoo...";
-
-    const data = {
-        host: 'imap.mail.yahoo.com',
-        port: 993,
-        user: 'IL_TUO_ACCOUNT@yahoo.com', // o meglio, fate scegliere all'utente
-        password: token, // access token come password
-        tls: true
-    };
-
-    try {
-        const res = await fetch('./mail.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        });
-        const emails = await res.json();
-        if (emails.error) throw emails.error;
-        if (emails.length === 0) {
-            document.getElementById('imap-content').innerHTML = "Nessun messaggio trovato.";
-            return;
-        }
-        document.getElementById('imap-content').innerHTML = emails.map(email =>
-            `<div class="email">
-                <strong>Da:</strong> ${email.from}<br>
-                <strong>Oggetto:</strong> ${email.subject}<br>
-                <strong>Data:</strong> ${email.date}<br>
-                <details><summary>Mostra contenuto</summary>
-                    <div class="email-body">${email.body_html || email.body}</div>
-                </details>
-            </div>`
-        ).join('');
-    } catch (e) {
-        document.getElementById('imap-content').innerHTML = "Errore Yahoo: " + e;
-    }
-}
-
-        
-document.getElementById('outlook_login').onclick = async function() {
-    try {
-        const loginResponse = await msalInstance.loginPopup(loginRequest);
-        const account = loginResponse.account;
-        const accessTokenResponse = await msalInstance.acquireTokenSilent({
-            ...loginRequest,
-            account: account
-        }).catch(() => {
-            return msalInstance.acquireTokenPopup(loginRequest);
-        });
-
-        const accessToken = accessTokenResponse.accessToken;
-        localStorage.setItem('outlook_access_token', accessToken);
-        fetchOutlookMessages(accessToken);
-    } catch (error) {
-        alert("Errore login Outlook: " + error);
-    }
-};
-function logoutOutlook() {
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts.length > 0) {
-        msalInstance.logoutPopup({
-            account: accounts[0]
-        });
-        localStorage.removeItem('outlook_access_token');
-        content.innerHTML = '';
-    }
-}
-
-//        document.getElementById('yahoo_login').onclick = function() {
-//    const params = new URLSearchParams({
- //       client_id: YAHOO_CLIENT_ID,
- //       redirect_uri: YAHOO_REDIRECT_URI,
- //       response_type: 'code',
- //       scope: YAHOO_SCOPE
- //   });
-//    window.location = `https://api.login.yahoo.com/oauth2/request_auth?${params}`;
-//};
-
-
-        
-    // Checkbox logic
-    function onEmailCheckboxChange(checkbox) {
-        const id = checkbox.getAttribute('data-id');
-        if (checkbox.checked) {
-            selectedEmails.add(id);
-        } else {
-            selectedEmails.delete(id);
-        }
-        renderBulkActions();
-    }
-
-
-
-async function fetchOutlookMessages(token, containerId = 'content') {
-    const div = document.getElementById(containerId);
-    div.innerHTML = 'Caricamento email Outlook...';
-    selectedEmails.clear();
-    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (res.status === 401) {
-        alert("Token Outlook non valido. Effettua di nuovo il login.");
-        localStorage.removeItem('outlook_access_token');
-        return;
-    }
-
-    const data = await res.json();
-    if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
-        div.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
-        bulkActions.style.display = 'none';
-        return;
-    }
-    const output = data.value.map(msg => `
-        <div class="email" id="email-${msg.id}">
-            <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
-            <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;<br>
-            <strong>Oggetto:</strong> ${msg.subject || '(Senza oggetto)'}<br>
-            <strong>Data:</strong> ${msg.receivedDateTime ? new Date(msg.receivedDateTime).toLocaleString() : ''}
-            <details><summary>Mostra contenuto</summary>
-                <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
-            </details>
-        </div>
-    `);
-    div.innerHTML = output.join('');
-    renderBulkActions();
-}
-// Helper per sicurezza
-function escapeHtml(text) {
-    return text ? text.replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[m])) : '';
-}
-
-    function renderBulkActions() {
-        const checkboxes = content.querySelectorAll('.email-checkbox');
-        bulkActions.style.display = checkboxes.length > 0 ? 'block' : 'none';
-        // Aggiorna lo stato del select_all (se tutti sono selezionati)
-        selectAllCheckbox.checked = (
-            checkboxes.length > 0 &&
-            [...checkboxes].every(cb => cb.checked)
-        );
-        // Aggiorna il contatore selezionati
-        selectedCountSpan.textContent = selectedEmails.size > 0 ? `Selezionate: ${selectedEmails.size}` : '';
-    }
-
-    selectAllCheckbox.addEventListener('change', function () {
-        const checkboxes = content.querySelectorAll('.email-checkbox');
-        for (const cb of checkboxes) {
-            cb.checked = this.checked;
-            const id = cb.getAttribute('data-id');
-            if (this.checked) selectedEmails.add(id);
-            else selectedEmails.delete(id);
-        }
-        renderBulkActions();
-    });
-
-    function getSelectedEmailIds() {
-        return Array.from(selectedEmails);
-    }
-
-    // GAPI/GIS
-    function gapiLoaded() {
-        gapi.load('client', initializeGapiClient);
-    }
-
-    async function initializeGapiClient() {
-        await gapi.client.init({
-            apiKey: API_KEY,
-            discoveryDocs: [DISCOVERY_DOC],
-        });
-        gapiInited = true;
-        maybeEnableButtons();
-    }
-
-    function gisLoaded() {
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: '',
-        });
-        gisInited = true;
-        maybeEnableButtons();
-    }
-
-    function maybeEnableButtons() {
-        // Ready to login if both inited
-    }
-
-function handleCredentialResponse(response) {
-    tokenClient.callback = async (resp) => {
-        if (resp.error !== undefined) {
-            throw(resp);
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const bar = document.getElementById('tabs-bar');
+            const idx = tabs.indexOf(tab);
+            if (bar && bar.children[idx]) bar.children[idx].classList.add('active');
         }
 
-        // ⛓️ Salva il token su GitHub via PHP
-        if (mail_user) {
-            fetch('./update_token.php', {
+        function addTab(type, label, loaderFn) {
+            const id = `tab-${type}-${tabs.length}`;
+            tabs.push({ id, type, label, loaded: false, loader: loaderFn });
+            renderTabs();
+            selectTab(id);
+        }
+
+        function openTabSelector() {
+            const label = prompt('Etichetta scheda?');
+            const tab = {
+                id: `tab-custom-${tabs.length}`,
+                type: 'custom',
+                label: label || 'Nuova',
+                loaded: false,
+                loader: async function(tab, container) {
+                    const tipo = prompt('Tipo di scheda: gmail, outlook, imap');
+                    if (tipo === 'gmail') {
+                        tab.loader = loadGmailTab;
+                        tab.type = 'gmail';
+                        await loadGmailTab(tab, container);
+                    } else if (tipo === 'outlook') {
+                        tab.loader = loadOutlookTab;
+                        tab.type = 'outlook';
+                        await loadOutlookTab(tab, container);
+                    } else if (tipo === 'imap') {
+                        tab.loader = loadImapTab;
+                        tab.type = 'imap';
+                        await loadImapTab(tab, container);
+                    } else {
+                        container.innerHTML = "Tipo non riconosciuto.";
+                    }
+                }
+            };
+            tabs.push(tab);
+            renderTabs();
+            selectTab(tab.id);
+        }
+
+        async function loadArchivioTab(tab, container) {
+            container.innerHTML = `<div id="${tab.id}-content">Caricamento archivio...</div>`;
+            const div = document.getElementById(`${tab.id}-content`);
+            const res = await fetch('./mail_storage_api.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: mail_user,
-                    gmail_token: resp.access_token
-                })
-            }).catch(err => console.error("Errore aggiornamento token Gmail:", err));
-        }
-
-        signoutButton.style.display = 'block';
-        await listMessages();
-    };
-
-    if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({prompt: 'consent'});
-    } else {
-        tokenClient.requestAccessToken({prompt: ''});
-    }
-}
-
-
-//    signoutButton.onclick = () => {
- //       const token = gapi.client.getToken();
- //       if (token !== null) {
-  //          google.accounts.oauth2.revoke(token.access_token);
- //           gapi.client.setToken('');
-  //          content.innerHTML = '';
- //           signoutButton.style.display = 'none';
-//            bulkActions.style.display = 'none';
-//            selectedEmails.clear();
-//            renderBulkActions();
-//        }
-//    };
-
-function parseStorageFilename(filename) {
-    const sep = '.----------------.';
-    const name = filename.replace(/\.html$/i, '');
-    const parts = name.split(sep);
-    return {
-        subject: (parts[0] || '').trim(),
-        date: (parts[1] || '').trim(),
-        from: (parts[2] || '').trim()
-    };
-}
-        
-    // Universal base64 decoder
-    function decodeBase64Url(base64) {
-        const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-        const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
-        const decoder = new TextDecoder('utf-8');
-        return decoder.decode(bytes);
-    }
-
-    // List emails with checkboxes
-async function listMessages(containerId = 'content') {
-    const content = document.getElementById(containerId);
-        let messages = [];
-        let nextPageToken = null;
-        content.innerHTML = 'Caricamento...';
-        selectedEmails.clear();
-        do {
-            const res = await gapi.client.gmail.users.messages.list({
-                'userId': 'me',
-                'maxResults': 50,
-                'pageToken': nextPageToken
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ action: 'list', username: mail_user })
             });
-            if (res.result.messages) {
-                messages = messages.concat(res.result.messages);
+            const files = await res.json();
+            if (!Array.isArray(files) || files.length === 0) {
+                div.innerHTML = 'Nessuna email salvata.';
+                return;
             }
-            nextPageToken = res.result.nextPageToken;
-        } while (nextPageToken);
-
-        if (messages.length === 0) {
-            content.innerHTML = 'Nessun messaggio trovato.';
-            bulkActions.style.display = 'none';
-            return;
+            div.innerHTML = files.map(file => `<div><strong>${file.name}</strong></div>`).join('');
         }
 
-        const output = [];
-        for (const message of messages) {
-            // Only headers for now
-            const msg = await gapi.client.gmail.users.messages.get({
-                'userId': 'me',
-                'id': message.id,
-                'format': 'metadata',
-                'metadataHeaders': ['Subject', 'From', 'Date']
-            });
-            const headers = msg.result.payload.headers;
-const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
-const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
-const date = msg.result.internalDate
-    ? (new Date(Number(msg.result.internalDate))).toISOString()
-    : (headers.find(h => h.name === 'Date')?.value || '');
-
-const filename = buildStorageFilename(subject, date, from);
-            output.push(`
-                <div class="email" id="${divId}">
-                    <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
-                    <strong>Da:</strong> ${from}<br>
-                    <strong>Oggetto:</strong> ${subject}<br>
-                    <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
-                    <button onclick="deleteEmail('${msg.result.id}')">Elimina</button>
-                    <div class="email-body" style="display:none;"></div>
-                </div>
-            `);
-        }
-        content.innerHTML = output.join('');
-        renderBulkActions();
-    }
-
-
-
-
-
-
-        
-    // Expand/Download helpers
-    async function expandEmail(messageId, filename) {
-        const container = document.getElementById(`email-${messageId}`);
-        const bodyDiv = container.querySelector('.email-body');
-        const expandBtn = container.querySelector('button');
-
-        if (bodyDiv.style.display !== 'none') {
-            bodyDiv.style.display = 'none';
-            expandBtn.innerText = 'Espandi';
-            return;
+        async function loadGmailTab(tab, container) {
+            container.innerHTML = `<div id="${tab.id}-content">Gmail: caricamento in corso...</div>`;
         }
 
-        bodyDiv.innerHTML = 'Caricamento...';
-
-        // Carica il messaggio completo
-        const msg = await gapi.client.gmail.users.messages.get({
-            'userId': 'me',
-            'id': messageId
-        });
-        const { html, attachments } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-
-        bodyDiv.innerHTML = html +
-            `<br>
-            <button onclick="exportSingleToHTML('email-${messageId}', '${filename}')">Scarica HTML</button>
-            <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
-            <button onclick="saveEmailToAccount('${filename}', 'email-${messageId}')">Salva su account</button>`;
-        
-        bodyDiv.style.display = 'block';
-        expandBtn.innerText = 'Riduci';
-    }
-    window.expandEmail = expandEmail;
-
-async function saveEmailToAccount(filename, divId) {
-    const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
-    const username = localStorage.getItem('mail_user');
-    if (!username) {
-        alert("Login richiesto");
-        return;
-    }
-
-    const res = await fetch('./save_html.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, filename, html})
-    });
-
-    const data = await res.json();
-    if (data.success) {
-        alert('Mail salvata con successo.');
-    } else {
-        alert('Errore salvataggio: ' + (data.message || ''));
-    }
-}
-window.saveEmailToAccount = saveEmailToAccount;
-
-        
-    // Body/attachments parser
-    function extractBodyAndAttachments(payload, messageId) {
-        let html = '';
-        const attachments = {};
-
-        function traverse(parts) {
-            for (const part of parts) {
-                if (part.mimeType === 'text/html' && part.body?.data) {
-                    html = decodeBase64Url(part.body.data);
-                } else if (part.mimeType && part.filename && part.body?.attachmentId) {
-                    const contentId = part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value?.replace(/[<>]/g, '');
-                    if (contentId) {
-                        attachments[contentId] = {
-                            attachmentId: part.body.attachmentId,
-                            mimeType: part.mimeType,
-                            messageId: messageId
-                        };
-                    }
-                } else if (part.parts) {
-                    traverse(part.parts);
-                }
-            }
+        async function loadOutlookTab(tab, container) {
+            container.innerHTML = `<div id="${tab.id}-content">Outlook: caricamento in corso...</div>`;
         }
 
-        if (payload.parts) {
-            traverse(payload.parts);
-        } else if (payload.body?.data) {
-            html = decodeBase64Url(payload.body.data);
+        async function loadImapTab(tab, container) {
+            container.innerHTML = `<div id="${tab.id}-content">IMAP: caricamento in corso...</div>`;
         }
 
-        return {html, attachments};
-    }
+        document.getElementById('login-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
 
-    function sanitizeFilename(name) {
-        return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    }
-
-function buildStorageFilename(subject, date, from) {
-    const sep = '.----------------.';
-    // Sanifica ogni parte per evitare caratteri strani nei nomi file
-    const clean = s => (s||'').replace(/[^a-zA-Z0-9@. _-]/g, '_').substring(0, 64);
-    return `${clean(subject)}${sep}${clean(date)}${sep}${clean(from)}.html`;
-}
-        
-    function exportSingleToHTML(divId, filename) {
-        const element = document.getElementById(divId);
-        const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>`;
-        const blob = new Blob([htmlContent], {type: "text/html"});
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${filename}.html`;
-        link.click();
-    }
-    window.exportSingleToHTML = exportSingleToHTML;
-
-    async function exportSingleToPDF(divId, filename, attachments) {
-        const element = document.getElementById(divId).querySelector('.email-body');
-        const cloned = element.cloneNode(true);
-
-        // Risolve immagini cid
-        const imgTags = cloned.querySelectorAll('img');
-        for (const img of imgTags) {
-            const src = img.getAttribute('src');
-            if (src?.startsWith('cid:')) {
-                const cid = src.replace('cid:', '');
-                if (attachments[cid]) {
-                    const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
-                    img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
-                }
-            }
-        }
-
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'fixed';
-        tempDiv.style.left = '-9999px';
-        tempDiv.appendChild(cloned);
-        document.body.appendChild(tempDiv);
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        await html2pdf().from(cloned).set({
-            filename: `${filename}.pdf`,
-            html2canvas: { scale: 2 }
-        }).save();
-
-        document.body.removeChild(tempDiv);
-    }
-    window.exportSingleToPDF = exportSingleToPDF;
-
-    async function getAttachmentData(messageId, attachmentId) {
-        const res = await gapi.client.gmail.users.messages.attachments.get({
-            'userId': 'me',
-            'messageId': messageId,
-            'id': attachmentId
-        });
-        return res.result.data;
-    }
-
-    // Elimina singola email
-    async function deleteEmail(messageId) {
-        if (!confirm('Sei sicuro di voler eliminare definitivamente questa email?')) return;
-        try {
-            await gapi.client.gmail.users.messages.delete({
-                'userId': 'me',
-                'id': messageId
-            });
-            const emailDiv = document.getElementById(`email-${messageId}`);
-            if (emailDiv) emailDiv.remove();
-            selectedEmails.delete(messageId);
-            renderBulkActions();
-            alert('Email eliminata definitivamente.');
-        } catch (e) {
-            alert('Errore durante l\'eliminazione: ' + (e.message || e));
-        }
-    }
-    window.deleteEmail = deleteEmail;
-
-    // Elimina tutte le selezionate
-    async function deleteSelectedEmails() {
-        const ids = getSelectedEmailIds();
-        if (!ids.length) {
-            alert('Nessuna email selezionata.');
-            return;
-        }
-        if (!confirm(`Eliminare definitivamente ${ids.length} email selezionate?`)) return;
-        for (const id of ids) {
             try {
-                await gapi.client.gmail.users.messages.delete({'userId': 'me', 'id': id});
-                const emailDiv = document.getElementById(`email-${id}`);
-                if (emailDiv) emailDiv.remove();
-                selectedEmails.delete(id);
-            } catch (e) {
-                alert(`Errore su ${id}: ${e.message || e}`);
-            }
-        }
-        renderBulkActions();
-        alert('Email selezionate eliminate.');
-    }
-    window.deleteSelectedEmails = deleteSelectedEmails;
+                const res = await fetch('./login.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
 
-    // Scarica tutte le selezionate (HTML o PDF)
-    async function downloadSelectedEmails(type) {
-        const ids = getSelectedEmailIds();
-        if (!ids.length) {
-            alert('Nessuna email selezionata.');
-            return;
-        }
-        for (const id of ids) {
-            const container = document.getElementById(`email-${id}`);
-            let subject = "email";
-            if (container) {
-                const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
-                subject = subjMatch ? subjMatch[1] : "email";
-                await expandEmail(id, sanitizeFilename(subject));
-                const emailBodyDiv = container.querySelector('.email-body');
-                // Ricava attachments per PDF
-                let attachments = {};
-                if (emailBodyDiv && type === 'pdf') {
-                    // recupera attachments dal bottone "Scarica PDF"
-                    const btn = emailBodyDiv.querySelector('button[onclick^="exportSingleToPDF"]');
-                    if (btn) {
-                        const matches = btn.getAttribute('onclick').match(/, (.+)\)$/);
-                        if (matches && matches[1]) {
-                            try {
-                                attachments = JSON.parse(matches[1].replace(/&quot;/g, '"'));
-                            } catch {}
-                        }
+                const result = await res.json();
+                if (result.status && (result.status === "success" || result.status === "created")) {
+                    localStorage.setItem('mail_user', username);
+                    localStorage.setItem('mail_authenticated', '1');
+                    mail_user = username;
+
+                    const hudDiv = document.getElementById('hud-username');
+                    hudDiv.innerHTML = username;
+                    hudDiv.style.display = 'block';
+
+                    const loginPopup = document.getElementById('login-popup');
+                    if (loginPopup) loginPopup.remove();
+
+                    addTab('archivio', 'Archivio', loadArchivioTab);
+
+                    if (window.gapi && gapi.client.getToken && gapi.client.getToken()) {
+                        addTab('gmail', 'Gmail', loadGmailTab);
                     }
+                    if (localStorage.getItem('outlook_access_token')) {
+                        addTab('outlook', 'Outlook', loadOutlookTab);
+                    }
+                } else {
+                    alert(result.error || "Errore di autenticazione.");
                 }
-                if (type === 'html') exportSingleToHTML('email-' + id, sanitizeFilename(subject));
-                if (type === 'pdf') await exportSingleToPDF('email-' + id, sanitizeFilename(subject), attachments);
+            } catch (err) {
+                alert("Errore durante il login: " + err);
             }
-        }
-    }
-    window.downloadSelectedEmails = downloadSelectedEmails;
+        };
 
-    // Espone funzioni per gli inline event HTML
-    window.onEmailCheckboxChange = onEmailCheckboxChange;
-
-    window.gapiLoaded = gapiLoaded;
-    window.gisLoaded = gisLoaded;
-
-
-        document.getElementById('imap-login-form').onsubmit = async function(e) {
-    e.preventDefault();
-    const data = {
-        host: document.getElementById('imap-host').value,
-        port: parseInt(document.getElementById('imap-port').value),
-        user: document.getElementById('imap-email').value,
-        password: document.getElementById('imap-password').value,
-        tls: document.getElementById('imap-tls').checked
-    };
-    document.getElementById('imap-content').innerHTML = "Caricamento...";
-    try {
-        const res = await fetch('./mail.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
+                mail_user = localStorage.getItem('mail_user');
+                document.getElementById('login-popup')?.remove();
+                const hud = document.getElementById('hud-username');
+                hud.innerHTML = mail_user;
+                hud.style.display = 'block';
+                addTab('archivio', 'Archivio', loadArchivioTab);
+                if (window.gapi && gapi.client.getToken && gapi.client.getToken()) {
+                    addTab('gmail', 'Gmail', loadGmailTab);
+                }
+                if (localStorage.getItem('outlook_access_token')) {
+                    addTab('outlook', 'Outlook', loadOutlookTab);
+                }
+            }
         });
-        const emails = await res.json();
-        if (emails.error) throw emails.error;
-        if (emails.length === 0) {
-            document.getElementById('imap-content').innerHTML = "Nessun messaggio trovato.";
-            return;
-        }
-        document.getElementById('imap-content').innerHTML = emails.map(email =>
-            `<div class="email">
-                <strong>Da:</strong> ${email.from}<br>
-                <strong>Oggetto:</strong> ${email.subject}<br>
-                <strong>Data:</strong> ${email.date}<br>
-                <details><summary>Mostra contenuto</summary>
-                    <div class="email-body">${email.body_html || email.body}</div>
-                </details>
-            </div>`
-        ).join('');
-    } catch (e) {
-        document.getElementById('imap-content').innerHTML = "Errore: " + e;
-    }
-};
-
-document.getElementById('login-form').onsubmit = async function(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-
-    try {
-        const res = await fetch('./login.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, password})
-        });
-
-        const result = await res.json();
-        if (result.status && (result.status === "success" || result.status === "created")) {
-            localStorage.setItem('mail_user', username);
-            window.USERNAME = username;
-            mail_user = username;
-
-            const hudDiv = document.getElementById('hud-username');
-            if(hudDiv) {
-                hudDiv.innerHTML = username;
-                hudDiv.style.display = 'block';
-            }
-
-            // CHIUDI SUBITO IL POPUP
-            const loginPopup = document.getElementById('login-popup');
-            if (loginPopup) loginPopup.remove();
-
-            // AGGIUNGI LA PRIMA SCHEDA ARCHIVIO
-            addTab('archivio', 'Archivio', loadArchivioTab);
-
-            // POI carica Gmail se già autenticato Google
-            if (gapiInited && gapi.client.getToken && gapi.client.getToken()) {
-                await listMessages();
-            }
-
-            // (eventualmente qui Outlook, IMAP ecc)
-        } else {
-            alert(result.error || "Errore di autenticazione.");
-        }
-    } catch (err) {
-        alert("Errore durante il login: " + err);
-    }
-};
-
-        
-async function loadSavedEmails(containerId = 'archivio') {
-    const div = document.getElementById(containerId);
-   
-   
-    if (!username) return;
-
-    const res = await fetch('./mail_storage_api.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ action: 'list', username })
-    });
-    const files = await res.json();
-    if (!Array.isArray(files) || files.length === 0) return;
-
-    // Costruisci HTML archivio e inserisci sopra le altre email
-    let html = '<h2>Archivio mail salvate</h2>';
-    for (const file of files) {
-        const fileId = 'saved-' + file.name.replace(/[^a-z0-9\-_]/gi, '_');
-    const meta = parseStorageFilename(file.name);
-    html += `
-        <div class="email" id="${fileId}">
-            <strong>Oggetto:</strong> ${meta.subject}<br>
-            <strong>Data:</strong> ${meta.date}<br>
-            <strong>Da:</strong> ${meta.from}<br>
-            <button onclick="expandSavedEmail('${file.name}', '${fileId}')">Espandi</button>
-            <div class="email-body" style="display:none;"></div>
-        </div>
-        `;
-    }
-   div.innerHTML = html;
-}
-
-// Espandi il singolo file salvato (on demand)
-window.expandSavedEmail = async function(filename, fileId) {
-    const username = localStorage.getItem('mail_user');
-    const div = document.getElementById(fileId);
-    const bodyDiv = div.querySelector('.email-body');
-    const btn = div.querySelector('button');
-    if (bodyDiv.style.display !== 'none') {
-        bodyDiv.style.display = 'none'; btn.innerText = 'Espandi'; return;
-    }
-    bodyDiv.innerHTML = 'Caricamento...';
-    btn.innerText = 'Riduci';
-    const res = await fetch('./mail_storage_api.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ action: 'get', username, filename })
-    });
-    const data = await res.json();
-    bodyDiv.innerHTML = data.html || 'Errore.';
-    bodyDiv.style.display = 'block';
-}
-
-        
     </script>
-
-    <!-- Caricamento librerie -->
-    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
-
 </body>
 </html>
