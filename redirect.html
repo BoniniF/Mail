@@ -348,38 +348,42 @@ async function downloadSelectedEmails(type) {
     for (const id of ids) {
         const container = document.getElementById(`email-${id}`);
         if (!container) continue;
-        // Estrai oggetto
         let subject = "email";
         const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
         subject = subjMatch ? subjMatch[1] : "email";
         const filename = sanitizeFilename(subject);
-        const bodyDiv = container.querySelector('.email-body');
-        
-        // GMAIL: sempre fetch del corpo, e cancella dopo
+
         if (activeTab.type === 'gmail') {
-            bodyDiv.innerHTML = 'Caricamento...';
+            // fetch SEMPRE il corpo completo
+            let html = '';
             try {
                 const msg = await gapi.client.gmail.users.messages.get({
                     'userId': 'me',
                     'id': id
                 });
-                const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-                bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
-            } catch (e) {
-                bodyDiv.innerHTML = '<i>Errore nel caricamento</i>';
+                html = extractBodyAndAttachments(msg.result.payload, msg.result.id).html || '<i>Nessun contenuto</i>';
+            } catch(e) {
+                html = '<i>Errore nel caricamento</i>';
+            }
+            if (type === 'html') {
+                exportRawHTML(html, filename);
+            }
+        } else {
+            // Outlook: funziona già perché il corpo è nel DOM
+            if (type === 'html') {
+                exportSingleToHTML('email-' + id, filename);
             }
         }
-
-        // Ora esporta (sia Outlook che Gmail)
-        if (type === 'html') {
-            exportSingleToHTML('email-' + id, filename);
-        }
-
-        // Dopo l'export, svuota il contenuto così non resta nel DOM
-        if (activeTab.type === 'gmail' && bodyDiv) {
-            bodyDiv.innerHTML = '';
-        }
     }
+}
+
+function exportRawHTML(html, filename) {
+    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${html}</body></html>`;
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename + ".html";
+    link.click();
 }
 
 
