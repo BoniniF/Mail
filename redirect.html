@@ -297,7 +297,7 @@ if (localStorage.getItem('mail_authenticated') === '1') {
     document.addEventListener('DOMContentLoaded', () => {
         const loginPopup = document.getElementById('login-popup');
         if (loginPopup) loginPopup.remove();
-        addTab('archivio', 'Archivio', loadArchivioTab);
+      
     });
 }
 
@@ -976,6 +976,33 @@ function buildStorageFilename(subject, date, from) {
 
     window.gapiLoaded = gapiLoaded;
     window.gisLoaded = gisLoaded;
+
+        window.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
+        const loginPopup = document.getElementById('login-popup');
+        if (loginPopup) loginPopup.remove();
+
+        const hudDiv = document.getElementById('hud-username');
+        if (hudDiv) {
+            hudDiv.innerHTML = localStorage.getItem('mail_user');
+            hudDiv.style.display = 'block';
+        }
+
+        // ⚠️ Ora è sicuro chiamare le funzioni, perché definite
+        addTab('archivio', 'Archivio', loadArchivioTab);
+
+        // Gmail
+        if (gapiInited && gapi.client.getToken && gapi.client.getToken()) {
+            addTab('gmail', 'Gmail', loadGmailTab);
+        }
+
+        // Outlook
+        if (localStorage.getItem('outlook_access_token')) {
+            addTab('outlook', 'Outlook', loadOutlookTab);
+        }
+    }
+});
+
 
 
         document.getElementById('imap-login-form').onsubmit = async function(e) {
