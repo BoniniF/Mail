@@ -506,17 +506,6 @@ function handleCredentialResponse(response) {
 //        }
 //    };
 
-function parseStorageFilename(filename) {
-    const sep = '.----------------.';
-    const name = filename.replace(/\.html$/i, '');
-    const parts = name.split(sep);
-    return {
-        subject: (parts[0] || '').trim(),
-        date: (parts[1] || '').trim(),
-        from: (parts[2] || '').trim()
-    };
-}
-        
     // Universal base64 decoder
     function decodeBase64Url(base64) {
         const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
@@ -556,16 +545,12 @@ function parseStorageFilename(filename) {
                 'userId': 'me',
                 'id': message.id,
                 'format': 'metadata',
-                'metadataHeaders': ['Subject', 'From', 'Date']
+                'metadataHeaders': ['Subject', 'From']
             });
             const headers = msg.result.payload.headers;
-const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
-const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
-const date = msg.result.internalDate
-    ? (new Date(Number(msg.result.internalDate))).toISOString()
-    : (headers.find(h => h.name === 'Date')?.value || '');
-
-const filename = buildStorageFilename(subject, date, from);
+            const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
+            const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
+            const divId = `email-${msg.result.id}`;
             output.push(`
                 <div class="email" id="${divId}">
                     <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
@@ -680,13 +665,6 @@ window.saveEmailToAccount = saveEmailToAccount;
         return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     }
 
-function buildStorageFilename(subject, date, from) {
-    const sep = '.----------------.';
-    // Sanifica ogni parte per evitare caratteri strani nei nomi file
-    const clean = s => (s||'').replace(/[^a-zA-Z0-9@. _-]/g, '_').substring(0, 64);
-    return `${clean(subject)}${sep}${clean(date)}${sep}${clean(from)}.html`;
-}
-        
     function exportSingleToHTML(divId, filename) {
         const element = document.getElementById(divId);
         const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>`;
@@ -918,15 +896,12 @@ async function loadSavedEmails() {
     let html = '<h2>Archivio mail salvate</h2>';
     for (const file of files) {
         const fileId = 'saved-' + file.name.replace(/[^a-z0-9\-_]/gi, '_');
-    const meta = parseStorageFilename(file.name);
-    html += `
-        <div class="email" id="${fileId}">
-            <strong>Oggetto:</strong> ${meta.subject}<br>
-            <strong>Data:</strong> ${meta.date}<br>
-            <strong>Da:</strong> ${meta.from}<br>
-            <button onclick="expandSavedEmail('${file.name}', '${fileId}')">Espandi</button>
-            <div class="email-body" style="display:none;"></div>
-        </div>
+        html += `
+            <div class="email" id="${fileId}">
+                <strong>File:</strong> ${file.name}<br>
+                <button onclick="expandSavedEmail('${file.name}', '${fileId}')">Espandi</button>
+                <div class="email-body" style="display:none;"></div>
+            </div>
         `;
     }
     const container = document.getElementById('content');
