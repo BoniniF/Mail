@@ -975,31 +975,33 @@ document.getElementById('login-form').onsubmit = async function(e) {
         });
 
         const result = await res.json();
-if (result.status && (result.status === "success" || result.status === "created")) {
-    localStorage.setItem('mail_user', username);
-    window.USERNAME = username;
-    mail_user = username;
-    
-    const hudDiv = document.getElementById('hud-username');
-   await loadSavedEmails();
-    
-    if(hudDiv) {
-      hudDiv.innerHTML = username;
-      hudDiv.style.display = 'block';
-   }
+        if (result.status && (result.status === "success" || result.status === "created")) {
+            localStorage.setItem('mail_user', username);
+            window.USERNAME = username;
+            mail_user = username;
 
-    const loginPopup = document.getElementById('login-popup');
-    if (loginPopup) loginPopup.remove();
+            const hudDiv = document.getElementById('hud-username');
+            if(hudDiv) {
+                hudDiv.innerHTML = username;
+                hudDiv.style.display = 'block';
+            }
 
-} else {
-    alert(result.error || "Errore di autenticazione.");
-}
+            // CHIUDI SUBITO IL POPUP
+            const loginPopup = document.getElementById('login-popup');
+            if (loginPopup) loginPopup.remove();
 
-        if (gapiInited && gapi.client.getToken && gapi.client.getToken()) {
-    // Sei già autenticato Google, carica le mail Gmail
-    await listMessages();
-}
+            // AGGIUNGI LA PRIMA SCHEDA ARCHIVIO
+            addTab('archivio', 'Archivio', loadArchivioTab);
 
+            // POI carica Gmail se già autenticato Google
+            if (gapiInited && gapi.client.getToken && gapi.client.getToken()) {
+                await listMessages();
+            }
+
+            // (eventualmente qui Outlook, IMAP ecc)
+        } else {
+            alert(result.error || "Errore di autenticazione.");
+        }
     } catch (err) {
         alert("Errore durante il login: " + err);
     }
@@ -1008,6 +1010,8 @@ if (result.status && (result.status === "success" || result.status === "created"
         
 async function loadSavedEmails(containerId = 'archivio') {
     const div = document.getElementById(containerId);
+   
+   
     if (!username) return;
 
     const res = await fetch('./mail_storage_api.php', {
@@ -1033,8 +1037,7 @@ async function loadSavedEmails(containerId = 'archivio') {
         </div>
         `;
     }
-    const container = document.getElementById('content');
-    container.innerHTML = html + container.innerHTML;
+   div.innerHTML = html;
 }
 
 // Espandi il singolo file salvato (on demand)
