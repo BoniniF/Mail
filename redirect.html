@@ -266,6 +266,20 @@ async function loadImapTab(tab, container) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
+
+
+if (localStorage.getItem('mail_authenticated') === '1') {
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginPopup = document.getElementById('login-popup');
+        if (loginPopup) loginPopup.remove();
+        addTab('archivio', 'Archivio', loadArchivioTab);
+    });
+}
+
+
+
+
+        
         const msalConfig = {
     auth: {
         clientId: '5dcc792b-ad91-4d6b-88e8-44e149c4b885', // il vostro client ID
@@ -298,7 +312,7 @@ const loginRequest = {
     const selectedEmails = new Set();
 
        
-//addTab('archivio', 'Archivio', loadArchivioTab);
+
 
 const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
 const OUTLOOK_REDIRECT_URI = 'https://bonini.hstn.me/mail/'; // crea questa pagina per ricevere il token
