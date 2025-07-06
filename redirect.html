@@ -337,16 +337,12 @@ window.handleCredentialResponse = function(response) {
 window.gapiLoaded = function() {
     gapi.load('client', initializeGapiClient);
 };
-
-// Sostituisci la funzione downloadSelectedEmails con questa versione migliorata:
-
 async function downloadSelectedEmails(type) {
     const ids = getSelectedEmailIds();
     if (!ids.length) {
         alert('Nessuna email selezionata.');
         return;
     }
-    // Trova la tab attiva
     const activeTab = tabs.find(t => t.active);
 
     for (const id of ids) {
@@ -356,39 +352,36 @@ async function downloadSelectedEmails(type) {
             // Prova a estrarre l'oggetto
             const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
             subject = subjMatch ? subjMatch[1] : "email";
+            const filename = sanitizeFilename(subject);
 
-            // Trova il div con il corpo della mail
             const bodyDiv = container.querySelector('.email-body');
-            let htmlReady = false;
 
-            // Se il corpo NON è visibile o vuoto, caricalo in modo invisibile
-            if (!bodyDiv || !bodyDiv.innerHTML || bodyDiv.innerHTML === '' || bodyDiv.innerHTML === 'Caricamento...') {
-                if (activeTab.type === 'gmail') {
-                    // Carica il corpo da Gmail (come fa expandCollapseGmail, ma senza mostrare)
-                    const msg = await gapi.client.gmail.users.messages.get({
-                        'userId': 'me',
-                        'id': id
-                    });
-                    const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-                    bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
-                    htmlReady = true;
-                } else if (activeTab.type === 'outlook') {
-                    // Carica il corpo da Outlook (solo se necessario, qui semplificato)
-                    // Se il corpo non è stato caricato, puoi implementare una fetch API a Microsoft Graph /messages/{id}
-                    // Ma se già incluso, lascia pure così
-                    htmlReady = true;
-                }
-                // Puoi aggiungere altri provider qui...
-            } else {
-                htmlReady = true;
+            // Gmail: se il corpo è vuoto o non caricato, lo carica ora!
+            if (activeTab.type === 'gmail') {
+                await ensureGmailBodyLoaded(id, bodyDiv);
             }
 
-            // Ora puoi esportare in HTML
-            if (type === 'html' && htmlReady) {
-                exportSingleToHTML('email-' + id, sanitizeFilename(subject));
+            // Outlook: di solito già pronto, altrimenti aggiungi fetch qui se serve
+
+            // Ora esporta
+            if (type === 'html') {
+                exportSingleToHTML('email-' + id, filename);
             }
         }
     }
+}
+
+// Nuova funzione helper per Gmail (carica corpo mail se vuoto)
+async function ensureGmailBodyLoaded(msgId, bodyDiv) {
+    if (!bodyDiv) return;
+    if (bodyDiv.innerHTML && bodyDiv.innerHTML !== '' && bodyDiv.innerHTML !== 'Caricamento...') return;
+    // Carica da API solo se non c'è già il corpo
+    const msg = await gapi.client.gmail.users.messages.get({
+        'userId': 'me',
+        'id': msgId
+    });
+    const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+    bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
 }
 
 // Funzione di export singolo (come nel tuo codice)
