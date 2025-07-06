@@ -347,8 +347,8 @@ async function downloadSelectedEmails(type) {
     }
     const activeTab = tabs.find(t => t.active);
 
-    // 1. Se siamo su Gmail, ESPANDI e CARICA OGNI EMAIL selezionata PRIMA di scaricare
     if (activeTab.type === "gmail") {
+        // 1. Espandi e carica TUTTE le email selezionate PRIMA di scaricare
         for (const id of ids) {
             const container = document.getElementById(`email-${id}`);
             if (!container) continue;
@@ -357,24 +357,26 @@ async function downloadSelectedEmails(type) {
             subject = subjMatch ? subjMatch[1] : "email";
             const filename = sanitizeFilename(subject);
 
-            // Espandi sempre, anche se già aperta (per sicurezza)
+            // Mostra SEMPRE il corpo (anche se già visibile, richiama la funzione che lo forza aperto)
             await window.expandCollapseGmail(id, container.querySelector('.expand-collapse'), filename);
 
-            // Attendi che il corpo sia popolato (fino a 4s)
+            // Attendi che il corpo sia popolato (max 4s)
             let bodyDiv = container.querySelector('.email-body');
             let waited = 0;
             while (
-                (!bodyDiv || bodyDiv.innerHTML.trim() === '' || bodyDiv.innerHTML.trim() === 'Caricamento...') &&
+                (!bodyDiv || bodyDiv.style.display === 'none' || bodyDiv.innerHTML.trim() === '' || bodyDiv.innerHTML.trim() === 'Caricamento...') &&
                 waited < 4000
             ) {
                 await new Promise(r => setTimeout(r, 80));
                 bodyDiv = container.querySelector('.email-body');
                 waited += 80;
             }
+            // Alla fine: il body è sicuramente visibile e pieno!
+            if (bodyDiv) bodyDiv.style.display = "block";
         }
     }
 
-    // 2. Ora scarica le email che sono sicuramente caricate
+    // 2. Ora scarica tutte le email (che sono sicuramente caricate e aperte!)
     for (const id of ids) {
         const container = document.getElementById(`email-${id}`);
         if (!container) continue;
@@ -384,20 +386,6 @@ async function downloadSelectedEmails(type) {
         const filename = sanitizeFilename(subject);
         if (type === 'html') {
             exportSingleToHTML('email-' + id, filename);
-        }
-        // (aggiungi qui eventuale logica PDF se serve)
-    }
-
-    // 3. (Facoltativo) richiudi tutte le email appena aperte (solo Gmail)
-    if (activeTab.type === "gmail") {
-        for (const id of ids) {
-            const container = document.getElementById(`email-${id}`);
-            if (!container) continue;
-            const expandBtn = container.querySelector('.expand-collapse');
-            let bodyDiv = container.querySelector('.email-body');
-            if (bodyDiv && bodyDiv.style.display !== 'none') {
-                await window.expandCollapseGmail(id, expandBtn, sanitizeFilename(subject));
-            }
         }
     }
 }
