@@ -216,19 +216,44 @@ function selectTab(tabId) {
         container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
     }
     // Aggiorna selezione tab
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    const idx = tabs.indexOf(tab);
-    bar.children[idx].classList.add('active');
+document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+const idx = tabs.indexOf(tab);
+const bar = document.getElementById('tabs-bar');
+if (bar && bar.children[idx]) bar.children[idx].classList.add('active');
+
 }
 
 function openTabSelector() {
-    // Mostra popup o menu per scegliere Gmail/Outlook/IMAP/yahoo etc...
-    // Esempio base:
-    const choice = prompt('Aggiungi: gmail, outlook, imap');
-    if (choice === 'gmail') addTab('gmail', 'Gmail', loadGmailTab);
-    if (choice === 'outlook') addTab('outlook', 'Outlook', loadOutlookTab);
-    if (choice === 'imap') addTab('imap', 'IMAP', loadImapTab);
+    const label = prompt('Etichetta scheda?');
+    const tab = {
+        id: `tab-custom-${tabs.length}`,
+        type: 'custom',
+        label: label || 'Nuova',
+        loaded: false,
+        loader: async function(tab, container) {
+            const tipo = prompt('Tipo di scheda: gmail, outlook, imap');
+            if (tipo === 'gmail') {
+                tab.loader = loadGmailTab;
+                tab.type = 'gmail';
+                await loadGmailTab(tab, container);
+            } else if (tipo === 'outlook') {
+                tab.loader = loadOutlookTab;
+                tab.type = 'outlook';
+                await loadOutlookTab(tab, container);
+            } else if (tipo === 'imap') {
+                tab.loader = loadImapTab;
+                tab.type = 'imap';
+                await loadImapTab(tab, container);
+            } else {
+                container.innerHTML = "Tipo non riconosciuto.";
+            }
+        }
+    };
+    tabs.push(tab);
+    renderTabs();
+    selectTab(tab.id);
 }
+
 
 // Loader per ogni tab
 async function loadArchivioTab(tab, container) {
@@ -1010,33 +1035,27 @@ document.getElementById('login-form').onsubmit = async function(e) {
     mail_user = username;
 
             const hudDiv = document.getElementById('hud-username');
-            if(hudDiv) {
-                hudDiv.innerHTML = username;
-                hudDiv.style.display = 'block';
-            }
+if (hudDiv) {
+    hudDiv.innerHTML = username;
+    hudDiv.style.display = 'block';
+}
 
-            // CHIUDI SUBITO IL POPUP
-         const loginPopup = document.getElementById('login-popup');
-    if (loginPopup) loginPopup.remove();
+const loginPopup = document.getElementById('login-popup');
+if (loginPopup) loginPopup.remove();
 
-            // AGGIUNGI LA PRIMA SCHEDA ARCHIVIO
-            addTab('archivio', 'Archivio', loadArchivioTab);
+// Archivio sempre come prima scheda
+addTab('archivio', 'Archivio', loadArchivioTab);
 
-            
+// Gmail (se già autenticato)
+if (gapiInited && gapi.client.getToken && gapi.client.getToken()) {
+    addTab('gmail', 'Gmail', loadGmailTab);
+}
 
-            // POI carica Gmail se già autenticato Google
-            if (gapiInited && gapi.client.getToken && gapi.client.getToken()) {
-                await listMessages();
-            }
+// Outlook (se già autenticato)
+if (localStorage.getItem('outlook_access_token')) {
+    addTab('outlook', 'Outlook', loadOutlookTab);
+}
 
-            // (eventualmente qui Outlook, IMAP ecc)
-        } else {
-            alert(result.error || "Errore di autenticazione.");
-        }
-    } catch (err) {
-        alert("Errore durante il login: " + err);
-    }
-};
 
         
 async function loadSavedEmails(containerId = 'archivio') {
