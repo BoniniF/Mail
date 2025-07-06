@@ -114,6 +114,7 @@
 <div>
     <button id="signout_button" style="display:none;">Disconnettiti</button>
     <button id="outlook_login">Accedi con Outlook</button>
+    <button id="gmail_login">Accedi con Gmail</button>
 </div>
 
 <!-- Bulk actions UI -->
@@ -132,20 +133,36 @@
 let username, mail_user;
 const selectedEmails = new Set();
 
+const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
+const OUTLOOK_REDIRECT_URI = window.location.origin + window.location.pathname; // questa pagina
+const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
+const msalConfig = {
+    auth: {
+        clientId: OUTLOOK_CLIENT_ID,
+        authority: "https://login.microsoftonline.com/common", 
+        redirectUri: OUTLOOK_REDIRECT_URI
+    }
+};
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+const loginRequest = {
+    scopes: ["Mail.Read", "offline_access", "User.Read"]
+};
+
 const tabs = [
     {
-        id: "tab-archivio-0",
+        id: "tab-archivio",
         type: "archivio",
         label: "Archivio",
         loader: loadArchivioTab,
-        alwaysReload: true // così ogni volta che selezioni ricarica sempre l'archivio
+        alwaysReload: true
     }
 ];
+let tabCounter = 1;
 
 function renderTabs() {
     const bar = document.getElementById('tabs-bar');
     bar.innerHTML = '';
-    tabs.forEach((tab, idx) => {
+    tabs.forEach((tab) => {
         const btn = document.createElement('button');
         btn.textContent = tab.label;
         btn.className = 'tab-btn' + (tab.active ? ' active' : '');
@@ -158,55 +175,28 @@ function renderTabs() {
     plus.onclick = openTabSelector;
     bar.appendChild(plus);
 }
-
+function openTabSelector() {
+    addTab('vuota', 'Nuova scheda', null);
+}
+function addTab(type, label, loaderFn) {
+    const id = `tab-${type}-${++tabCounter}`;
+    tabs.push({ id, type, label, loader: loaderFn, loaded: false });
+    selectTab(id);
+    renderTabs();
+}
 function selectTab(tabId) {
     tabs.forEach(t => t.active = (t.id === tabId));
     renderTabs();
     const tab = tabs.find(t => t.id === tabId);
     const container = document.getElementById('tabs-content');
-    if (tab.alwaysReload) {
+    if (tab.type === 'vuota') {
+        container.innerHTML = `<div id="${tab.id}-content">Seleziona un servizio per questa scheda.</div>`;
+    } else if (tab.alwaysReload) {
         tab.loader(tab, container);
-    } else {
-        if (!tab.loaded) {
-            tab.loader(tab, container).then(() => { tab.loaded = true; });
-        } else {
-            container.innerHTML = document.getElementById(tab.id + '-content')?.outerHTML || '';
-        }
+    } else if (tab.loader) {
+        tab.loader(tab, container);
+        tab.loaded = true;
     }
-}
-
-function openTabSelector() {
-    const choice = prompt('Aggiungi: gmail, outlook, imap');
-    if (choice === 'gmail') addTab('gmail', 'Gmail', loadGmailTab);
-    if (choice === 'outlook') addTab('outlook', 'Outlook', loadOutlookTab);
-    if (choice === 'imap') addTab('imap', 'IMAP', loadImapTab);
-}
-function addTab(type, label, loaderFn) {
-    const id = `tab-${type}-${tabs.length}`;
-    tabs.push({ id, type, label, loader: loaderFn, loaded: false });
-    selectTab(id);
-    renderTabs();
-}
-
-// Loader per ogni tab
-async function loadArchivioTab(tab, container) {
-    const contentId = tab.id + '-content';
-    container.innerHTML = `<div id="${contentId}"></div>`;
-    await loadSavedEmails(contentId);
-}
-async function loadGmailTab(tab, container) {
-    const contentId = tab.id + '-content';
-    container.innerHTML = `<div id="${contentId}"></div>`;
-    await listMessages(contentId);
-}
-async function loadOutlookTab(tab, container) {
-    const contentId = tab.id + '-content';
-    container.innerHTML = `<div id="${contentId}"></div>`;
-    await fetchOutlookMessages(localStorage.getItem('outlook_access_token') || '', contentId);
-}
-async function loadImapTab(tab, container) {
-    const contentId = tab.id + '-content';
-    container.innerHTML = `<div id="${contentId}">Compila sopra i dati IMAP.</div>`;
 }
 
 window.addEventListener('DOMContentLoaded', function() {
@@ -257,7 +247,55 @@ document.getElementById('login-form').onsubmit = async function(e) {
     }
 };
 
-async function loadSavedEmails(containerId = 'tab-archivio-0-content') {
+// OUTLOOK LOGIN
+document.getElementById('outlook_login').onclick = async function() {
+    const activeTab = tabs.find(t => t.active);
+    if (activeTab && activeTab.type === 'vuota') {
+        try {
+            const loginResponse = await msalInstance.loginPopup(loginRequest);
+            const account = loginResponse.account;
+            const accessTokenResponse = await msalInstance.acquireTokenSilent({
+                ...loginRequest,
+                account: account
+            }).catch(() => {
+                return msalInstance.acquireTokenPopup(loginRequest);
+            });
+
+            const accessToken = accessTokenResponse.accessToken;
+            localStorage.setItem('outlook_access_token', accessToken);
+            // Trasforma la scheda
+            activeTab.type = 'outlook';
+            activeTab.label = 'Outlook';
+            activeTab.loader = loadOutlookTab;
+            selectTab(activeTab.id);
+        } catch (error) {
+            alert("Errore login Outlook: " + error);
+        }
+    } else {
+        alert('Seleziona una scheda vuota per accedere a Outlook.');
+    }
+};
+
+// GMAIL LOGIN (mock, puoi integrare GAPI come vuoi)
+document.getElementById('gmail_login').onclick = function() {
+    const activeTab = tabs.find(t => t.active);
+    if (activeTab && activeTab.type === 'vuota') {
+        activeTab.type = 'gmail';
+        activeTab.label = 'Gmail';
+        activeTab.loader = loadGmailTab;
+        selectTab(activeTab.id);
+    } else {
+        alert('Seleziona una scheda vuota per accedere a Gmail.');
+    }
+};
+
+// ARCHIVIO
+async function loadArchivioTab(tab, container) {
+    const contentId = tab.id + '-content';
+    container.innerHTML = `<div id="${contentId}"></div>`;
+    await loadSavedEmails(contentId);
+}
+async function loadSavedEmails(containerId = 'tab-archivio-content') {
     const div = document.getElementById(containerId);
     const user = localStorage.getItem('mail_user');
     if (!user) { div.innerHTML = "Login richiesto."; return; }
@@ -307,6 +345,62 @@ window.expandSavedEmail = async function(filename, fileId) {
     bodyDiv.style.display = 'block';
 };
 
+// OUTLOOK
+async function loadOutlookTab(tab, container) {
+    const contentId = tab.id + '-content';
+    container.innerHTML = `<div id="${contentId}"></div>`;
+    await fetchOutlookMessages(localStorage.getItem('outlook_access_token') || '', contentId);
+}
+async function fetchOutlookMessages(token, containerId) {
+    const div = document.getElementById(containerId);
+    div.innerHTML = 'Caricamento email Outlook...';
+    selectedEmails.clear();
+    if (!token) {
+        div.innerHTML = 'Token Outlook non trovato. Fai login.';
+        return;
+    }
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.status === 401) {
+        alert("Token Outlook non valido. Effettua di nuovo il login.");
+        localStorage.removeItem('outlook_access_token');
+        div.innerHTML = 'Token scaduto. Fai login Outlook.';
+        return;
+    }
+
+    const data = await res.json();
+    if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
+        div.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
+        return;
+    }
+    const output = data.value.map(msg => `
+        <div class="email" id="email-${msg.id}">
+            <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
+            <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;<br>
+            <strong>Oggetto:</strong> ${msg.subject || '(Senza oggetto)'}<br>
+            <strong>Data:</strong> ${msg.receivedDateTime ? new Date(msg.receivedDateTime).toLocaleString() : ''}
+            <details><summary>Mostra contenuto</summary>
+                <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
+            </details>
+        </div>
+    `);
+    div.innerHTML = output.join('');
+}
+
+// GMAIL MOCK
+async function loadGmailTab(tab, container) {
+    const contentId = tab.id + '-content';
+    container.innerHTML = `<div id="${contentId}"><i>Gmail: integra qui la tua funzione di caricamento mail Gmail</i></div>`;
+}
+
+// IMAP (solo UI demo)
+async function loadImapTab(tab, container) {
+    const contentId = tab.id + '-content';
+    container.innerHTML = `<div id="${contentId}">Compila sopra i dati IMAP.</div>`;
+}
+
 function parseStorageFilename(filename) {
     const sep = '.----------------.';
     const name = filename.replace(/\.html$/i, '');
@@ -317,11 +411,17 @@ function parseStorageFilename(filename) {
         from: (parts[2] || '').trim()
     };
 }
+function escapeHtml(text) {
+    return text ? text.replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m])) : '';
+}
+
+// Checkbox logic stub
+window.onEmailCheckboxChange = function(checkbox) { /* Espandi qui la logica se serve */ };
 
 </script>
-<!-- Caricamento librerie -->
-<script src="https://apis.google.com/js/api.js" onload="if(window.gapiLoaded)gapiLoaded()"></script>
-<script src="https://accounts.google.com/gsi/client" onload="if(window.gisLoaded)gisLoaded()"></script>
-
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
 </body>
 </html>
