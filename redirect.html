@@ -102,8 +102,7 @@
     z-index:10000;">
 </div>
 
-<div id="tabs-bar" style="display:flex;justify-content:center;margin:22px 0;"></div>
-<div id="tabs-content"></div>
+
 
 <!-- IMAP/Other Email Services -->
 <h2>Altri servizi email (IMAP)</h2>
@@ -145,6 +144,9 @@
     <button onclick="saveSelectedToAccount()">Salva selezionate su account</button>
 </div>
 
+<div id="tabs-bar" style="display:flex;justify-content:center;margin:22px 0;"></div>
+<div id="tabs-content"></div>
+    
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -353,6 +355,24 @@ async function downloadSelectedEmails(type) {
     }
 }
 window.downloadSelectedEmails = downloadSelectedEmails;
+
+async function expandEmail(messageId, filename) {
+    const container = document.getElementById(`email-${messageId}`);
+    const bodyDiv = container.querySelector('.email-body');
+    // Già caricata?
+    if (bodyDiv.style.display !== 'none' && bodyDiv.innerHTML.trim() !== '' && bodyDiv.innerHTML.trim() !== 'Caricamento...') {
+        return;
+    }
+    bodyDiv.innerHTML = 'Caricamento...';
+    // Carica il messaggio completo
+    const msg = await gapi.client.gmail.users.messages.get({
+        'userId': 'me',
+        'id': messageId
+    });
+    const { html, attachments } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+    bodyDiv.innerHTML = html + /* ...altri bottoni... */;
+    bodyDiv.style.display = 'block';
+}
     
 async function initializeGapiClient() {
     await gapi.client.init({
