@@ -11,6 +11,7 @@
             margin: 0;
             padding: 20px;
         }
+        h1 { color: #333; }
         button {
             padding: 8px 16px;
             border: none;
@@ -37,14 +38,6 @@
             background: white;
             overflow-x: auto;
             margin-top: 10px;
-            display: none;
-        }
-        .expand-toggle {
-            cursor: pointer;
-            font-size: 1.4em;
-            margin-right: 8px;
-            user-select: none;
-            vertical-align: middle;
         }
         #bulk-actions {
             background: #fff;
@@ -60,6 +53,9 @@
         }
         #imap-content .email { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px; margin-bottom: 15px; }
         #imap-content .email-body { border: 1px solid #ccc; padding: 10px; background: #fafafa; margin-top: 10px; overflow-x: auto; }
+        #tabs-bar { background:rgba(255,255,255,0.3); border-radius:12px; overflow:auto; }
+        .tab-btn { border:none; background:transparent; font-size:1.1em; padding:12px 18px; cursor:pointer; }
+        .tab-btn.active { background:#013220; color:#fff; border-radius:8px 8px 0 0; }
     </style>
 </head>
 <body>
@@ -71,7 +67,14 @@
         <input type="password" id="password" placeholder="Password" required style="background:rgba(255,255,255,0.5); border:none; padding:8px; border-radius:4px; color:#013220; margin-bottom:20px;"><br>
         <button 
             type="submit"
-            style="background:#013220;color:#fff;border:none;padding:7px 15px;border-radius:6px;cursor:pointer;font-size:23px;display:block;margin-left:auto;margin-right:auto;">⇮
+            style="
+                background:#013220;
+                color:#fff;
+                border:none;
+                padding:7px 15px;
+                border-radius:6px;
+                cursor:pointer;font-size:23px;
+                display:block;margin-left:auto;margin-right:auto;">⇮
         </button>
     </form>
 </div>
@@ -92,7 +95,18 @@
     font-size:2em; 
     z-index:10000;">
 </div>
-    
+
+<div id="tabs-bar" style="display:flex;justify-content:center;margin:22px 0;"></div>
+<div id="bulk-actions" style="display:none;">
+    <input type="checkbox" id="select_all" /> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
+    <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
+    <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
+    <button onclick="downloadSelectedEmails('pdf')">Scarica PDF selezionate</button>
+    <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
+</div>
+<div id="tabs-content"></div>
+
+<!-- IMAP/Other Email Services -->
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
     <label>Email: <input type="email" id="imap-email" required></label>
@@ -106,30 +120,26 @@
 
 <div>
     <button id="signout_button" style="display:none;">Disconnettiti</button>
-    <button id="gmail_login">Accedi con Gmail</button>
     <button id="outlook_login">Accedi con Outlook</button>
+    <button id="gmail_login">Accedi con Gmail</button>
 </div>
-
-<!-- Bulk actions UI -->
-<div id="bulk-actions" style="display:none;">
-    <input type="checkbox" id="select_all" /> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
-    <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
-    <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
-    <button onclick="downloadSelectedEmails('pdf')">Scarica PDF selezionate</button>
-    <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
-</div>
-
-<div id="content"></div>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+let username, mail_user;
+let selectedEmails = new Set();
+let currentTabType = 'archivio'; // For bulk actions logic
+
+const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
+const OUTLOOK_REDIRECT_URI = window.location.origin + window.location.pathname;
+const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
 const msalConfig = {
     auth: {
-        clientId: '5dcc792b-ad91-4d6b-88e8-44e149c4b885',
-        authority: "https://login.microsoftonline.com/common",
-        redirectUri: window.location.origin + window.location.pathname
+        clientId: OUTLOOK_CLIENT_ID,
+        authority: "https://login.microsoftonline.com/common", 
+        redirectUri: OUTLOOK_REDIRECT_URI
     }
 };
 const msalInstance = new msal.PublicClientApplication(msalConfig);
@@ -141,118 +151,274 @@ const CLIENT_ID = '956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleuser
 const API_KEY = 'AIzaSyDY0pP67ezZD9DD38ifNfhKtbz-6ivOulI';
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest';
 const SCOPES = 'https://mail.google.com/';
-
 let tokenClient;
 let gapiInited = false;
 let gisInited = false;
 
-const signoutButton = document.getElementById('signout_button');
-const content = document.getElementById('content');
-const bulkActions = document.getElementById('bulk-actions');
-const selectAllCheckbox = document.getElementById('select_all');
-const selectedCountSpan = document.getElementById('selected-count');
-const selectedEmails = new Set();
+const tabs = [
+    {
+        id: "tab-archivio",
+        type: "archivio",
+        label: "Archivio",
+        loader: loadArchivioTab,
+        alwaysReload: true
+    }
+];
+let tabCounter = 1;
 
-let mail_user = null;
-
-function escapeHtml(text) {
-    return text ? text.replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[m])) : '';
+function renderTabs() {
+    const bar = document.getElementById('tabs-bar');
+    bar.innerHTML = '';
+    tabs.forEach((tab) => {
+        const btn = document.createElement('button');
+        btn.textContent = tab.label;
+        btn.className = 'tab-btn' + (tab.active ? ' active' : '');
+        btn.onclick = () => selectTab(tab.id);
+        bar.appendChild(btn);
+    });
+    const plus = document.createElement('button');
+    plus.textContent = '+';
+    plus.className = 'tab-btn';
+    plus.onclick = openTabSelector;
+    bar.appendChild(plus);
+}
+function openTabSelector() {
+    addTab('vuota', 'Nuova scheda', null);
+}
+function addTab(type, label, loaderFn) {
+    const id = `tab-${type}-${++tabCounter}`;
+    tabs.push({ id, type, label, loader: loaderFn, loaded: false });
+    selectTab(id);
+    renderTabs();
+}
+function selectTab(tabId) {
+    tabs.forEach(t => t.active = (t.id === tabId));
+    renderTabs();
+    const tab = tabs.find(t => t.id === tabId);
+    currentTabType = tab.type;
+    const container = document.getElementById('tabs-content');
+    selectedEmails = new Set();
+    if (tab.type === 'vuota') {
+        container.innerHTML = `<div id="${tab.id}-content">Seleziona un servizio per questa scheda.</div>`;
+        showBulkActions(false);
+    } else if (tab.alwaysReload) {
+        tab.loader(tab, container);
+    } else if (tab.loader) {
+        tab.loader(tab, container);
+        tab.loaded = true;
+    }
 }
 
-// OUTLOOK
-document.getElementById('outlook_login').onclick = async function() {
-    try {
-        const loginResponse = await msalInstance.loginPopup(loginRequest);
-        const account = loginResponse.account;
-        const accessTokenResponse = await msalInstance.acquireTokenSilent({
-            ...loginRequest,
-            account: account
-        }).catch(() => {
-            return msalInstance.acquireTokenPopup(loginRequest);
-        });
+window.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
+        username = mail_user = localStorage.getItem('mail_user');
+        document.getElementById('login-popup')?.remove();
+        const hudDiv = document.getElementById('hud-username');
+        if (hudDiv) {
+            hudDiv.innerHTML = username;
+            hudDiv.style.display = 'block';
+        }
+        renderTabs();
+        selectTab(tabs[0].id);
+    } else {
+        renderTabs();
+    }
+});
 
-        const accessToken = accessTokenResponse.accessToken;
-        localStorage.setItem('outlook_access_token', accessToken);
-        fetchOutlookMessages(accessToken);
-    } catch (error) {
-        alert("Errore login Outlook: " + error);
+document.getElementById('login-form').onsubmit = async function(e) {
+    e.preventDefault();
+    username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    try {
+        const res = await fetch('./login.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
+        });
+        const result = await res.json();
+        if (result.status && (result.status === "success" || result.status === "created")) {
+            localStorage.setItem('mail_user', username);
+            localStorage.setItem('mail_authenticated', '1');
+            window.USERNAME = username;
+            mail_user = username;
+            const hudDiv = document.getElementById('hud-username');
+            if(hudDiv) {
+                hudDiv.innerHTML = username;
+                hudDiv.style.display = 'block';
+            }
+            document.getElementById('login-popup')?.remove();
+            renderTabs();
+            selectTab(tabs[0].id);
+        } else {
+            alert(result.error || "Errore di autenticazione.");
+        }
+    } catch (err) {
+        alert("Errore durante il login: " + err);
     }
 };
 
-async function fetchOutlookMessages(token) {
-    content.innerHTML = 'Caricamento email Outlook...';
-    selectedEmails.clear();
-    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=50', {
+// OUTLOOK LOGIN
+document.getElementById('outlook_login').onclick = async function() {
+    const activeTab = tabs.find(t => t.active);
+    if (activeTab && activeTab.type === 'vuota') {
+        try {
+            const loginResponse = await msalInstance.loginPopup(loginRequest);
+            const account = loginResponse.account;
+            const accessTokenResponse = await msalInstance.acquireTokenSilent({
+                ...loginRequest,
+                account: account
+            }).catch(() => {
+                return msalInstance.acquireTokenPopup(loginRequest);
+            });
+
+            const accessToken = accessTokenResponse.accessToken;
+            localStorage.setItem('outlook_access_token', accessToken);
+            // Trasforma la scheda
+            activeTab.type = 'outlook';
+            activeTab.label = 'Outlook';
+            activeTab.loader = loadOutlookTab;
+            selectTab(activeTab.id);
+        } catch (error) {
+            alert("Errore login Outlook: " + error);
+        }
+    } else {
+        alert('Seleziona una scheda vuota per accedere a Outlook.');
+    }
+};
+
+// GMAIL LOGIN
+document.getElementById('gmail_login').onclick = function() {
+    const activeTab = tabs.find(t => t.active);
+    if (activeTab && activeTab.type === 'vuota') {
+        activeTab.type = 'gmail';
+        activeTab.label = 'Gmail';
+        activeTab.loader = loadGmailTab;
+        selectTab(activeTab.id);
+    } else {
+        alert('Seleziona una scheda vuota per accedere a Gmail.');
+    }
+};
+
+// ARCHIVIO
+async function loadArchivioTab(tab, container) {
+    const contentId = tab.id + '-content';
+    container.innerHTML = `<div id="${contentId}"></div>`;
+    await loadSavedEmails(contentId);
+    showBulkActions(false);
+}
+async function loadSavedEmails(containerId = 'tab-archivio-content') {
+    const div = document.getElementById(containerId);
+    const user = localStorage.getItem('mail_user');
+    if (!user) { div.innerHTML = "Login richiesto."; return; }
+    const res = await fetch('./mail_storage_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'list', username: user })
+    });
+    const files = await res.json();
+    if (!Array.isArray(files) || files.length === 0) {
+        div.innerHTML = "Nessun archivio salvato.";
+        return;
+    }
+    let html = '<h2>Archivio mail salvate</h2>';
+    for (const file of files) {
+        const fileId = 'saved-' + file.name.replace(/[^a-z0-9\-_]/gi, '_');
+        const meta = parseStorageFilename(file.name);
+        html += `
+            <div class="email" id="${fileId}">
+                <strong>Oggetto:</strong> ${meta.subject}<br>
+                <strong>Data:</strong> ${meta.date}<br>
+                <strong>Da:</strong> ${meta.from}<br>
+                <details><summary>Mostra contenuto</summary>
+                    <div class="email-body" style="display:none;"></div>
+                </details>
+                <button onclick="expandSavedEmail('${file.name}', '${fileId}')">Espandi</button>
+            </div>
+        `;
+    }
+    div.innerHTML = html;
+}
+window.expandSavedEmail = async function(filename, fileId) {
+    const username = localStorage.getItem('mail_user');
+    const div = document.getElementById(fileId);
+    const bodyDiv = div.querySelector('.email-body');
+    const btn = div.querySelector('button');
+    if (bodyDiv.style.display !== 'none') {
+        bodyDiv.style.display = 'none'; btn.innerText = 'Espandi'; return;
+    }
+    bodyDiv.innerHTML = 'Caricamento...';
+    btn.innerText = 'Riduci';
+    const res = await fetch('./mail_storage_api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action: 'get', username, filename })
+    });
+    const data = await res.json();
+    bodyDiv.innerHTML = data.html || 'Errore.';
+    bodyDiv.style.display = 'block';
+};
+
+// OUTLOOK
+async function loadOutlookTab(tab, container) {
+    const contentId = tab.id + '-content';
+    container.innerHTML = `<div id="${contentId}"></div>`;
+    await fetchOutlookMessages(localStorage.getItem('outlook_access_token') || '', contentId);
+}
+async function fetchOutlookMessages(token, containerId) {
+    const div = document.getElementById(containerId);
+    div.innerHTML = 'Caricamento email Outlook...';
+    selectedEmails = new Set();
+    if (!token) {
+        div.innerHTML = 'Token Outlook non trovato. Fai login.';
+        showBulkActions(false);
+        return;
+    }
+    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
         headers: { Authorization: `Bearer ${token}` }
     });
 
     if (res.status === 401) {
         alert("Token Outlook non valido. Effettua di nuovo il login.");
         localStorage.removeItem('outlook_access_token');
+        div.innerHTML = 'Token scaduto. Fai login Outlook.';
+        showBulkActions(false);
         return;
     }
 
     const data = await res.json();
     if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
-        content.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
-        bulkActions.style.display = 'none';
+        div.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
+        showBulkActions(false);
         return;
     }
     const output = data.value.map(msg => `
         <div class="email" id="email-${msg.id}">
             <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
-            <span class="expand-toggle" onclick="toggleExpand('${msg.id}')">▶</span>
-            <strong>Da:</strong> ${escapeHtml(msg.from?.emailAddress?.name || '')} &lt;${escapeHtml(msg.from?.emailAddress?.address || '')}&gt;<br>
-            <strong>Oggetto:</strong> ${escapeHtml(msg.subject || '(Senza oggetto)')}<br>
+            <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;<br>
+            <strong>Oggetto:</strong> ${msg.subject || '(Senza oggetto)'}<br>
             <strong>Data:</strong> ${msg.receivedDateTime ? new Date(msg.receivedDateTime).toLocaleString() : ''}
-            <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
-            <button onclick="deleteOutlookEmail('${msg.id}')">Elimina</button>
+            <details><summary>Mostra contenuto</summary>
+                <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
+            </details>
         </div>
     `);
-    content.innerHTML = output.join('');
+    div.innerHTML = output.join('');
+    showBulkActions(true);
     renderBulkActions();
 }
 
-// GMAIL
-document.getElementById('gmail_login').onclick = async function() {
-    if (!gapiInited || !gisInited) {
-        alert('Google API non pronta.');
-        return;
-    }
-    tokenClient.callback = async (resp) => {
-        if (resp.error !== undefined) throw(resp);
-        signoutButton.style.display = 'block';
-        await listGmailMessages();
-    };
-    if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({prompt: 'consent'});
-    } else {
-        tokenClient.requestAccessToken({prompt: ''});
-    }
-};
-window.gapiLoaded = function() {
-    gapi.load('client', initializeGapiClient);
-};
-async function initializeGapiClient() {
-    await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC], });
-    gapiInited = true;
+// GMAIL -- SIMILE OUTLOOK (espansione, selezione, bulk)
+async function loadGmailTab(tab, container) {
+    const contentId = tab.id + '-content';
+    container.innerHTML = `<div id="${contentId}"></div>`;
+    await listMessages(contentId);
 }
-window.gisLoaded = function() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: '',
-    });
-    gisInited = true;
-};
-
-async function listGmailMessages() {
+async function listMessages(containerId) {
     let messages = [];
     let nextPageToken = null;
-    content.innerHTML = 'Caricamento...';
-    selectedEmails.clear();
+    const div = document.getElementById(containerId);
+    div.innerHTML = 'Caricamento...';
+    selectedEmails = new Set();
     do {
         const res = await gapi.client.gmail.users.messages.list({
             'userId': 'me',
@@ -266,13 +432,14 @@ async function listGmailMessages() {
     } while (nextPageToken);
 
     if (messages.length === 0) {
-        content.innerHTML = 'Nessun messaggio trovato.';
-        bulkActions.style.display = 'none';
+        div.innerHTML = 'Nessun messaggio trovato.';
+        showBulkActions(false);
         return;
     }
 
     const output = [];
     for (const message of messages) {
+        // Only headers for now
         const msg = await gapi.client.gmail.users.messages.get({
             'userId': 'me',
             'id': message.id,
@@ -289,105 +456,94 @@ async function listGmailMessages() {
         output.push(`
             <div class="email" id="${divId}">
                 <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
-                <span class="expand-toggle" onclick="toggleExpand('${msg.result.id}')">▶</span>
-                <strong>Da:</strong> ${escapeHtml(from)}<br>
-                <strong>Oggetto:</strong> ${escapeHtml(subject)}<br>
+                <strong>Da:</strong> ${from}<br>
+                <strong>Oggetto:</strong> ${subject}<br>
                 <strong>Data:</strong> ${date}
-                <div class="email-body"></div>
-                <button onclick="deleteGmailEmail('${msg.result.id}')">Elimina</button>
+                <details><summary>Mostra contenuto</summary>
+                    <div class="email-body" style="display:none;"></div>
+                </details>
+                <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
+                <button onclick="deleteEmail('${msg.result.id}')">Elimina</button>
             </div>
         `);
     }
-    content.innerHTML = output.join('');
+    div.innerHTML = output.join('');
+    showBulkActions(true);
     renderBulkActions();
 }
 
-// Espansione per Outlook e Gmail (uguale per entrambi)
-window.toggleExpand = async function(messageId) {
-    const emailDiv = document.getElementById('email-' + messageId);
-    const expandIcon = emailDiv.querySelector('.expand-toggle');
-    const bodyDiv = emailDiv.querySelector('.email-body');
-    if (bodyDiv.style.display === 'block') {
+// Espandere Gmail email (show/hide e carica corpo)
+async function expandEmail(messageId, filename) {
+    const container = document.getElementById(`email-${messageId}`);
+    const bodyDiv = container.querySelector('.email-body');
+    const expandBtn = container.querySelector('button[onclick^="expandEmail"]');
+    if (bodyDiv.style.display !== 'none') {
         bodyDiv.style.display = 'none';
-        expandIcon.textContent = '▶';
-        return;
-    }
-    if (bodyDiv.innerHTML.trim() && bodyDiv.innerHTML !== 'Caricamento...') {
-        bodyDiv.style.display = 'block';
-        expandIcon.textContent = '▼';
+        expandBtn.innerText = 'Espandi';
         return;
     }
     bodyDiv.innerHTML = 'Caricamento...';
+    // Carica il messaggio completo
+    const msg = await gapi.client.gmail.users.messages.get({
+        'userId': 'me',
+        'id': messageId
+    });
+    const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+    bodyDiv.innerHTML = html || 'Nessun contenuto';
     bodyDiv.style.display = 'block';
-    expandIcon.textContent = '▼';
+    expandBtn.innerText = 'Riduci';
+}
+window.expandEmail = expandEmail;
 
-    // Se Gmail
-    if (messageId.startsWith('1') || messageId.length === 16 || messageId.length === 18) {
-        // Gmail ID: proviamo a caricare il corpo!
-        const msg = await gapi.client.gmail.users.messages.get({
-            'userId': 'me',
-            'id': messageId
-        });
-        let html = '';
-        function decodeBase64Url(base64) {
-            const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-            const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
-            const decoder = new TextDecoder('utf-8');
-            return decoder.decode(bytes);
+window.deleteEmail = async function(messageId) {
+    if (currentTabType === "gmail") {
+        if (!confirm('Sei sicuro di voler eliminare definitivamente questa email?')) return;
+        try {
+            await gapi.client.gmail.users.messages.delete({
+                'userId': 'me',
+                'id': messageId
+            });
+            const emailDiv = document.getElementById(`email-${messageId}`);
+            if (emailDiv) emailDiv.remove();
+            selectedEmails.delete(messageId);
+            renderBulkActions();
+            alert('Email eliminata definitivamente.');
+        } catch (e) {
+            alert('Errore durante l\'eliminazione: ' + (e.message || e));
         }
-        function traverse(parts) {
-            for (const part of parts) {
-                if (part.mimeType === 'text/html' && part.body?.data) {
-                    html = decodeBase64Url(part.body.data);
-                } else if (part.parts) {
-                    traverse(part.parts);
-                }
-            }
-        }
-        if (msg.result.payload.parts) traverse(msg.result.payload.parts);
-        else if (msg.result.payload.body?.data) html = decodeBase64Url(msg.result.payload.body.data);
-        bodyDiv.innerHTML = html || '(Nessun corpo disponibile)';
+    } else if (currentTabType === "outlook") {
+        // Outlook: API not implemented qui, aggiungi la tua chiamata delete se vuoi
+        alert("Eliminazione Outlook non implementata qui.");
     }
-    // Se Outlook: il corpo è già presente nell'html
-    // IMAP: non gestito qui
 };
 
-// Elimina Gmail
-window.deleteGmailEmail = async function(messageId) {
-    if (!confirm('Eliminare questa email Gmail?')) return;
-    await gapi.client.gmail.users.messages.delete({ 'userId': 'me', 'id': messageId });
-    document.getElementById('email-' + messageId).remove();
-    selectedEmails.delete(messageId);
-    renderBulkActions();
-};
-// Elimina Outlook
-window.deleteOutlookEmail = async function(messageId) {
-    if (!confirm('Eliminare questa email Outlook?')) return;
-    // Outlook non permette DELETE via Graph API se non con permessi aggiuntivi.
-    // Qui la rimuoviamo solo dalla UI
-    document.getElementById('email-' + messageId).remove();
-    selectedEmails.delete(messageId);
-    renderBulkActions();
-};
-
-// Checkbox logic collettiva (Outlook+Gmail)
-window.onEmailCheckboxChange = function(checkbox) {
+// Bulk logic
+function onEmailCheckboxChange(checkbox) {
     const id = checkbox.getAttribute('data-id');
-    if (checkbox.checked) selectedEmails.add(id);
-    else selectedEmails.delete(id);
+    if (checkbox.checked) {
+        selectedEmails.add(id);
+    } else {
+        selectedEmails.delete(id);
+    }
     renderBulkActions();
-};
+}
+window.onEmailCheckboxChange = onEmailCheckboxChange;
 
 function renderBulkActions() {
+    let content = document.getElementById("tabs-content");
     const checkboxes = content.querySelectorAll('.email-checkbox');
-    bulkActions.style.display = checkboxes.length > 0 ? 'block' : 'none';
-    selectAllCheckbox.checked = (
+    document.getElementById('bulk-actions').style.display = checkboxes.length > 0 ? 'block' : 'none';
+    document.getElementById('select_all').checked = (
         checkboxes.length > 0 &&
         [...checkboxes].every(cb => cb.checked)
     );
-    selectedCountSpan.textContent = selectedEmails.size > 0 ? `Selezionate: ${selectedEmails.size}` : '';
+    document.getElementById('selected-count').textContent = selectedEmails.size > 0 ? `Selezionate: ${selectedEmails.size}` : '';
 }
-selectAllCheckbox.addEventListener('change', function () {
+function showBulkActions(show) {
+    document.getElementById('bulk-actions').style.display = show ? 'block' : 'none';
+}
+document.getElementById('select_all').addEventListener('change', function () {
+    let content = document.getElementById("tabs-content");
     const checkboxes = content.querySelectorAll('.email-checkbox');
     for (const cb of checkboxes) {
         cb.checked = this.checked;
@@ -397,80 +553,98 @@ selectAllCheckbox.addEventListener('change', function () {
     }
     renderBulkActions();
 });
+
 function getSelectedEmailIds() {
     return Array.from(selectedEmails);
 }
-
-// IMAP
-document.getElementById('imap-login-form').onsubmit = async function(e) {
-    e.preventDefault();
-    const data = {
-        host: document.getElementById('imap-host').value,
-        port: parseInt(document.getElementById('imap-port').value),
-        user: document.getElementById('imap-email').value,
-        password: document.getElementById('imap-password').value,
-        tls: document.getElementById('imap-tls').checked
-    };
-    document.getElementById('imap-content').innerHTML = "Caricamento...";
-    try {
-        const res = await fetch('./mail.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data)
-        });
-        const emails = await res.json();
-        if (emails.error) throw emails.error;
-        if (emails.length === 0) {
-            document.getElementById('imap-content').innerHTML = "Nessun messaggio trovato.";
-            return;
-        }
-        document.getElementById('imap-content').innerHTML = emails.map(email =>
-            `<div class="email">
-                <strong>Da:</strong> ${email.from}<br>
-                <strong>Oggetto:</strong> ${email.subject}<br>
-                <strong>Data:</strong> ${email.date}<br>
-                <details><summary>Mostra contenuto</summary>
-                    <div class="email-body">${email.body_html || email.body}</div>
-                </details>
-            </div>`
-        ).join('');
-    } catch (e) {
-        document.getElementById('imap-content').innerHTML = "Errore: " + e;
+window.deleteSelectedEmails = async function () {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
     }
-};
-
-// LOGIN
-document.getElementById('login-form').onsubmit = async function(e) {
-    e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    try {
-        const res = await fetch('./login.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, password})
-        });
-
-        const result = await res.json();
-        if (result.status && (result.status === "success" || result.status === "created")) {
-            localStorage.setItem('mail_user', username);
-            window.USERNAME = username;
-            mail_user = username;
-            const hudDiv = document.getElementById('hud-username');
-            if(hudDiv) {
-                hudDiv.innerHTML = username;
-                hudDiv.style.display = 'block';
+    if (!confirm(`Eliminare definitivamente ${ids.length} email selezionate?`)) return;
+    if (currentTabType === "gmail") {
+        for (const id of ids) {
+            try {
+                await gapi.client.gmail.users.messages.delete({'userId': 'me', 'id': id});
+                const emailDiv = document.getElementById(`email-${id}`);
+                if (emailDiv) emailDiv.remove();
+                selectedEmails.delete(id);
+            } catch (e) {
+                alert(`Errore su ${id}: ${e.message || e}`);
             }
-            const loginPopup = document.getElementById('login-popup');
-            if (loginPopup) loginPopup.remove();
-        } else {
-            alert(result.error || "Errore di autenticazione.");
         }
-    } catch (err) {
-        alert("Errore durante il login: " + err);
+        renderBulkActions();
+        alert('Email selezionate eliminate.');
+    } else if (currentTabType === "outlook") {
+        alert("Bulk delete Outlook non implementato qui.");
     }
 };
+window.downloadSelectedEmails = function(type) {
+    alert("Funzione scarica da implementare in questa versione demo.");
+};
 
+function parseStorageFilename(filename) {
+    const sep = '.----------------.';
+    const name = filename.replace(/\.html$/i, '');
+    const parts = name.split(sep);
+    return {
+        subject: (parts[0] || '').trim(),
+        date: (parts[1] || '').trim(),
+        from: (parts[2] || '').trim()
+    };
+}
+function escapeHtml(text) {
+    return text ? text.replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[m])) : '';
+}
+function sanitizeFilename(name) {
+    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+}
+function extractBodyAndAttachments(payload, messageId) {
+    let html = '';
+    function traverse(parts) {
+        for (const part of parts) {
+            if (part.mimeType === 'text/html' && part.body?.data) {
+                html = decodeBase64Url(part.body.data);
+            } else if (part.parts) {
+                traverse(part.parts);
+            }
+        }
+    }
+    if (payload.parts) {
+        traverse(payload.parts);
+    } else if (payload.body?.data) {
+        html = decodeBase64Url(payload.body.data);
+    }
+    return { html };
+}
+function decodeBase64Url(base64) {
+    const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
+    const decoder = new TextDecoder('utf-8');
+    return decoder.decode(bytes);
+}
+
+// GAPI
+window.gapiLoaded = function() { gapi.load('client', initializeGapiClient); };
+async function initializeGapiClient() {
+    await gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: [DISCOVERY_DOC],
+    });
+    gapiInited = true;
+}
+window.gisLoaded = function() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '',
+    });
+    gisInited = true;
+};
 </script>
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
