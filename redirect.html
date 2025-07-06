@@ -976,9 +976,10 @@ document.getElementById('login-form').onsubmit = async function(e) {
 
         const result = await res.json();
         if (result.status && (result.status === "success" || result.status === "created")) {
-            localStorage.setItem('mail_user', username);
-            window.USERNAME = username;
-            mail_user = username;
+             localStorage.setItem('mail_user', username);
+    localStorage.setItem('mail_authenticated', '1'); // AGGIUNGI QUESTO
+    window.USERNAME = username;
+    mail_user = username;
 
             const hudDiv = document.getElementById('hud-username');
             if(hudDiv) {
@@ -987,8 +988,8 @@ document.getElementById('login-form').onsubmit = async function(e) {
             }
 
             // CHIUDI SUBITO IL POPUP
-            const loginPopup = document.getElementById('login-popup');
-            if (loginPopup) loginPopup.remove();
+         const loginPopup = document.getElementById('login-popup');
+    if (loginPopup) loginPopup.remove();
 
             // AGGIUNGI LA PRIMA SCHEDA ARCHIVIO
             addTab('archivio', 'Archivio', loadArchivioTab);
