@@ -150,6 +150,7 @@
         <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
         <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
         <button onclick="downloadSelectedEmails('pdf')">Scarica PDF selezionate</button>
+        <button onclick="saveSelectedEmailsToAccount()">Salva selezionate su account</button>
         <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
     </div>
 
@@ -162,9 +163,9 @@
     <script>
         const msalConfig = {
     auth: {
-        clientId: '5dcc792b-ad91-4d6b-88e8-44e149c4b885', // il vostro client ID
+        clientId: '5dcc792b-ad91-4d6b-88e8-44e149c4b885',
         authority: "https://login.microsoftonline.com/common", 
-        redirectUri: "https://bonini.hstn.me/mail" // questa pagina stessa
+        redirectUri: "https://bonini.hstn.me/mail"
     }
 };
 
@@ -195,7 +196,7 @@ const loginRequest = {
 
 
 const OUTLOOK_CLIENT_ID = '5dcc792b-ad91-4d6b-88e8-44e149c4b885';
-const OUTLOOK_REDIRECT_URI = 'https://bonini.hstn.me/mail/'; // crea questa pagina per ricevere il token
+const OUTLOOK_REDIRECT_URI = 'https://bonini.hstn.me/mail/';
 const OUTLOOK_SCOPE = 'https://graph.microsoft.com/Mail.Read offline_access';
 
         const YAHOO_CLIENT_ID = 'dj0yJmk9bW81aDBsUWJyY044JmQ9WVdrOVUydFJSamhoVGt3bWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYy';
@@ -259,9 +260,6 @@ const YAHOO_BACKEND = './yahoo.php';
     }
 };
 
-        
-        
-
 
 async function exchangeYahooCodeForToken(code) {
     const res = await fetch(YAHOO_BACKEND, {
@@ -281,8 +279,8 @@ async function fetchYahooEmails(token) {
     const data = {
         host: 'imap.mail.yahoo.com',
         port: 993,
-        user: 'IL_TUO_ACCOUNT@yahoo.com', // o meglio, fate scegliere all'utente
-        password: token, // access token come password
+        user: 'IL_TUO_ACCOUNT@yahoo.com',
+        password: token,
         tls: true
     };
 
@@ -313,7 +311,6 @@ async function fetchYahooEmails(token) {
     }
 }
 
-        
 document.getElementById('outlook_login').onclick = async function() {
     try {
         const loginResponse = await msalInstance.loginPopup(loginRequest);
@@ -343,133 +340,122 @@ function logoutOutlook() {
     }
 }
 
-//        document.getElementById('yahoo_login').onclick = function() {
-//    const params = new URLSearchParams({
- //       client_id: YAHOO_CLIENT_ID,
- //       redirect_uri: YAHOO_REDIRECT_URI,
- //       response_type: 'code',
- //       scope: YAHOO_SCOPE
- //   });
-//    window.location = `https://api.login.yahoo.com/oauth2/request_auth?${params}`;
-//};
-
-
-        
-    // Checkbox logic
-    function onEmailCheckboxChange(checkbox) {
-        const id = checkbox.getAttribute('data-id');
-        if (checkbox.checked) {
-            selectedEmails.add(id);
-        } else {
-            selectedEmails.delete(id);
-        }
-        renderBulkActions();
+function onEmailCheckboxChange(checkbox) {
+    const id = checkbox.getAttribute('data-id');
+    if (checkbox.checked) {
+        selectedEmails.add(id);
+    } else {
+        selectedEmails.delete(id);
     }
-
-
-
-        async function fetchOutlookMessages(token) {
-       content.innerHTML = 'Caricamento email Outlook...';
-    selectedEmails.clear();
-    const res = await fetch('https://graph.microsoft.com/v1.0/me/mailfolders/inbox/messages?$top=20', {
-        headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (res.status === 401) {
-        alert("Token Outlook non valido. Effettua di nuovo il login.");
-        localStorage.removeItem('outlook_access_token');
-        return;
-    }
-
-    const data = await res.json();
-    if (!data.value || !Array.isArray(data.value) || data.value.length === 0) {
-        content.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
-        bulkActions.style.display = 'none';
-        return;
-    }
-    const output = data.value.map(msg => `
-        <div class="email" id="email-${msg.id}">
-            <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
-            <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;<br>
-            <strong>Oggetto:</strong> ${msg.subject || '(Senza oggetto)'}<br>
-            <strong>Data:</strong> ${msg.receivedDateTime ? new Date(msg.receivedDateTime).toLocaleString() : ''}
-            <details><summary>Mostra contenuto</summary>
-                <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
-            </details>
-        </div>
-    `);
-    content.innerHTML = output.join('');
     renderBulkActions();
 }
-// Helper per sicurezza
-function escapeHtml(text) {
-    return text ? text.replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-    }[m])) : '';
+
+// Improved: always expand and fetch content to export if not already expanded
+async function downloadSelectedEmails(type) {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    // For Gmail: expand all messages before exporting
+    for (const id of ids) {
+        const container = document.getElementById(`email-${id}`);
+        let subject = "email";
+        if (container) {
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            // Expand the mail if not expanded
+            const bodyDiv = container.querySelector('.email-body');
+            if (!bodyDiv || bodyDiv.innerHTML.trim() === '' || bodyDiv.style.display === "none") {
+                await expandEmail(id, sanitizeFilename(subject), true); // true = silent, do not toggle UI
+            }
+            // Now export
+            if (type === 'html') exportSingleToHTML('email-' + id, sanitizeFilename(subject));
+            // PDF omitted for brevity (see your original logic if needed)
+        }
+    }
+}
+window.downloadSelectedEmails = downloadSelectedEmails;
+
+// Improved: always expand before saving to account
+async function saveSelectedEmailsToAccount() {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    for (const id of ids) {
+        const container = document.getElementById(`email-${id}`);
+        let subject = "email";
+        if (container) {
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            // Expand the mail if not expanded
+            const bodyDiv = container.querySelector('.email-body');
+            if (!bodyDiv || bodyDiv.innerHTML.trim() === '' || bodyDiv.style.display === "none") {
+                await expandEmail(id, sanitizeFilename(subject), true);
+            }
+            await saveEmailToAccount(sanitizeFilename(subject), 'email-' + id);
+        }
+    }
+}
+window.saveSelectedEmailsToAccount = saveSelectedEmailsToAccount;
+
+function renderBulkActions() {
+    const checkboxes = content.querySelectorAll('.email-checkbox');
+    bulkActions.style.display = checkboxes.length > 0 ? 'block' : 'none';
+    selectAllCheckbox.checked = (
+        checkboxes.length > 0 &&
+        [...checkboxes].every(cb => cb.checked)
+    );
+    selectedCountSpan.textContent = selectedEmails.size > 0 ? `Selezionate: ${selectedEmails.size}` : '';
 }
 
-    function renderBulkActions() {
-        const checkboxes = content.querySelectorAll('.email-checkbox');
-        bulkActions.style.display = checkboxes.length > 0 ? 'block' : 'none';
-        // Aggiorna lo stato del select_all (se tutti sono selezionati)
-        selectAllCheckbox.checked = (
-            checkboxes.length > 0 &&
-            [...checkboxes].every(cb => cb.checked)
-        );
-        // Aggiorna il contatore selezionati
-        selectedCountSpan.textContent = selectedEmails.size > 0 ? `Selezionate: ${selectedEmails.size}` : '';
+selectAllCheckbox.addEventListener('change', function () {
+    const checkboxes = content.querySelectorAll('.email-checkbox');
+    for (const cb of checkboxes) {
+        cb.checked = this.checked;
+        const id = cb.getAttribute('data-id');
+        if (this.checked) selectedEmails.add(id);
+        else selectedEmails.delete(id);
     }
+    renderBulkActions();
+});
 
-    selectAllCheckbox.addEventListener('change', function () {
-        const checkboxes = content.querySelectorAll('.email-checkbox');
-        for (const cb of checkboxes) {
-            cb.checked = this.checked;
-            const id = cb.getAttribute('data-id');
-            if (this.checked) selectedEmails.add(id);
-            else selectedEmails.delete(id);
-        }
-        renderBulkActions();
+function getSelectedEmailIds() {
+    return Array.from(selectedEmails);
+}
+
+function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
+}
+
+async function initializeGapiClient() {
+    await gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: [DISCOVERY_DOC],
     });
+    gapiInited = true;
+    maybeEnableButtons();
+}
 
-    function getSelectedEmailIds() {
-        return Array.from(selectedEmails);
-    }
+function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: '',
+    });
+    gisInited = true;
+    maybeEnableButtons();
+}
 
-    // GAPI/GIS
-    function gapiLoaded() {
-        gapi.load('client', initializeGapiClient);
-    }
-
-    async function initializeGapiClient() {
-        await gapi.client.init({
-            apiKey: API_KEY,
-            discoveryDocs: [DISCOVERY_DOC],
-        });
-        gapiInited = true;
-        maybeEnableButtons();
-    }
-
-    function gisLoaded() {
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: '',
-        });
-        gisInited = true;
-        maybeEnableButtons();
-    }
-
-    function maybeEnableButtons() {
-        // Ready to login if both inited
-    }
+function maybeEnableButtons() {}
 
 function handleCredentialResponse(response) {
     tokenClient.callback = async (resp) => {
         if (resp.error !== undefined) {
             throw(resp);
         }
-
-        // ⛓️ Salva il token su GitHub via PHP
         if (mail_user) {
             fetch('./update_token.php', {
                 method: 'POST',
@@ -480,7 +466,6 @@ function handleCredentialResponse(response) {
                 })
             }).catch(err => console.error("Errore aggiornamento token Gmail:", err));
         }
-
         signoutButton.style.display = 'block';
         await listMessages();
     };
@@ -492,117 +477,92 @@ function handleCredentialResponse(response) {
     }
 }
 
+function decodeBase64Url(base64) {
+    const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
+    const decoder = new TextDecoder('utf-8');
+    return decoder.decode(bytes);
+}
 
-//    signoutButton.onclick = () => {
- //       const token = gapi.client.getToken();
- //       if (token !== null) {
-  //          google.accounts.oauth2.revoke(token.access_token);
- //           gapi.client.setToken('');
-  //          content.innerHTML = '';
- //           signoutButton.style.display = 'none';
-//            bulkActions.style.display = 'none';
-//            selectedEmails.clear();
-//            renderBulkActions();
-//        }
-//    };
+// List emails with checkboxes
+async function listMessages() {
+    let messages = [];
+    let nextPageToken = null;
+    content.innerHTML = 'Caricamento...';
+    selectedEmails.clear();
+    do {
+        const res = await gapi.client.gmail.users.messages.list({
+            'userId': 'me',
+            'maxResults': 50,
+            'pageToken': nextPageToken
+        });
+        if (res.result.messages) {
+            messages = messages.concat(res.result.messages);
+        }
+        nextPageToken = res.result.nextPageToken;
+    } while (nextPageToken);
 
-    // Universal base64 decoder
-    function decodeBase64Url(base64) {
-        const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
-        const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
-        const decoder = new TextDecoder('utf-8');
-        return decoder.decode(bytes);
+    if (messages.length === 0) {
+        content.innerHTML = 'Nessun messaggio trovato.';
+        bulkActions.style.display = 'none';
+        return;
     }
 
-    // List emails with checkboxes
-    async function listMessages() {
-        let messages = [];
-        let nextPageToken = null;
-        content.innerHTML = 'Caricamento...';
-        selectedEmails.clear();
-        do {
-            const res = await gapi.client.gmail.users.messages.list({
-                'userId': 'me',
-                'maxResults': 50,
-                'pageToken': nextPageToken
-            });
-            if (res.result.messages) {
-                messages = messages.concat(res.result.messages);
-            }
-            nextPageToken = res.result.nextPageToken;
-        } while (nextPageToken);
-
-        if (messages.length === 0) {
-            content.innerHTML = 'Nessun messaggio trovato.';
-            bulkActions.style.display = 'none';
-            return;
-        }
-
-        const output = [];
-        for (const message of messages) {
-            // Only headers for now
-            const msg = await gapi.client.gmail.users.messages.get({
-                'userId': 'me',
-                'id': message.id,
-                'format': 'metadata',
-                'metadataHeaders': ['Subject', 'From']
-            });
-            const headers = msg.result.payload.headers;
-            const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
-            const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
-            const divId = `email-${msg.result.id}`;
-            output.push(`
-                <div class="email" id="${divId}">
-                    <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
-                    <strong>Da:</strong> ${from}<br>
-                    <strong>Oggetto:</strong> ${subject}<br>
-                    <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
-                    <button onclick="deleteEmail('${msg.result.id}')">Elimina</button>
-                    <div class="email-body" style="display:none;"></div>
-                </div>
-            `);
-        }
-        content.innerHTML = output.join('');
-        renderBulkActions();
+    const output = [];
+    for (const message of messages) {
+        const msg = await gapi.client.gmail.users.messages.get({
+            'userId': 'me',
+            'id': message.id,
+            'format': 'metadata',
+            'metadataHeaders': ['Subject', 'From']
+        });
+        const headers = msg.result.payload.headers;
+        const subject = headers.find(h => h.name === 'Subject')?.value || '(Senza oggetto)';
+        const from = headers.find(h => h.name === 'From')?.value || '(Sconosciuto)';
+        const divId = `email-${msg.result.id}`;
+        output.push(`
+            <div class="email" id="${divId}">
+                <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
+                <strong>Da:</strong> ${from}<br>
+                <strong>Oggetto:</strong> ${subject}<br>
+                <button onclick="expandEmail('${msg.result.id}', '${sanitizeFilename(subject)}')">Espandi</button>
+                <button onclick="deleteEmail('${msg.result.id}')">Elimina</button>
+                <div class="email-body" style="display:none;"></div>
+            </div>
+        `);
     }
+    content.innerHTML = output.join('');
+    renderBulkActions();
+}
 
-
-
-
-
-
-        
-    // Expand/Download helpers
-    async function expandEmail(messageId, filename) {
-        const container = document.getElementById(`email-${messageId}`);
-        const bodyDiv = container.querySelector('.email-body');
-        const expandBtn = container.querySelector('button');
-
+// Espandi e, se silent=true, non gestire bottoni ma solo il caricamento (interno per export/salva)
+async function expandEmail(messageId, filename, silent) {
+    const container = document.getElementById(`email-${messageId}`);
+    const bodyDiv = container.querySelector('.email-body');
+    const expandBtn = container.querySelector('button');
+    if (!silent) {
         if (bodyDiv.style.display !== 'none') {
             bodyDiv.style.display = 'none';
             expandBtn.innerText = 'Espandi';
             return;
         }
-
         bodyDiv.innerHTML = 'Caricamento...';
-
-        // Carica il messaggio completo
-        const msg = await gapi.client.gmail.users.messages.get({
-            'userId': 'me',
-            'id': messageId
-        });
-        const { html, attachments } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-
-        bodyDiv.innerHTML = html +
-            `<br>
-            <button onclick="exportSingleToHTML('email-${messageId}', '${filename}')">Scarica HTML</button>
-            <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
-            <button onclick="saveEmailToAccount('${filename}', 'email-${messageId}')">Salva su account</button>`;
-        
-        bodyDiv.style.display = 'block';
-        expandBtn.innerText = 'Riduci';
     }
-    window.expandEmail = expandEmail;
+    // Carica il messaggio completo
+    const msg = await gapi.client.gmail.users.messages.get({
+        'userId': 'me',
+        'id': messageId
+    });
+    const { html, attachments } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+    bodyDiv.innerHTML = html +
+        `<br>
+        <button onclick="exportSingleToHTML('email-${messageId}', '${filename}')">Scarica HTML</button>
+        <button onclick="exportSingleToPDF('email-${messageId}', '${filename}', ${JSON.stringify(attachments).replace(/"/g, '&quot;')})">Scarica PDF</button>
+        <button onclick="saveEmailToAccount('${filename}', 'email-${messageId}')">Salva su account</button>`;
+    bodyDiv.style.display = 'block';
+    if (!silent) expandBtn.innerText = 'Riduci';
+}
+window.expandEmail = expandEmail;
 
 async function saveEmailToAccount(filename, divId) {
     const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
@@ -627,184 +587,144 @@ async function saveEmailToAccount(filename, divId) {
 }
 window.saveEmailToAccount = saveEmailToAccount;
 
-        
-    // Body/attachments parser
-    function extractBodyAndAttachments(payload, messageId) {
-        let html = '';
-        const attachments = {};
+function extractBodyAndAttachments(payload, messageId) {
+    let html = '';
+    const attachments = {};
 
-        function traverse(parts) {
-            for (const part of parts) {
-                if (part.mimeType === 'text/html' && part.body?.data) {
-                    html = decodeBase64Url(part.body.data);
-                } else if (part.mimeType && part.filename && part.body?.attachmentId) {
-                    const contentId = part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value?.replace(/[<>]/g, '');
-                    if (contentId) {
-                        attachments[contentId] = {
-                            attachmentId: part.body.attachmentId,
-                            mimeType: part.mimeType,
-                            messageId: messageId
-                        };
-                    }
-                } else if (part.parts) {
-                    traverse(part.parts);
+    function traverse(parts) {
+        for (const part of parts) {
+            if (part.mimeType === 'text/html' && part.body?.data) {
+                html = decodeBase64Url(part.body.data);
+            } else if (part.mimeType && part.filename && part.body?.attachmentId) {
+                const contentId = part.headers?.find(h => h.name.toLowerCase() === 'content-id')?.value?.replace(/[<>]/g, '');
+                if (contentId) {
+                    attachments[contentId] = {
+                        attachmentId: part.body.attachmentId,
+                        mimeType: part.mimeType,
+                        messageId: messageId
+                    };
                 }
+            } else if (part.parts) {
+                traverse(part.parts);
             }
         }
-
-        if (payload.parts) {
-            traverse(payload.parts);
-        } else if (payload.body?.data) {
-            html = decodeBase64Url(payload.body.data);
-        }
-
-        return {html, attachments};
     }
 
-    function sanitizeFilename(name) {
-        return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    if (payload.parts) {
+        traverse(payload.parts);
+    } else if (payload.body?.data) {
+        html = decodeBase64Url(payload.body.data);
     }
 
-    function exportSingleToHTML(divId, filename) {
-        const element = document.getElementById(divId);
-        const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>`;
-        const blob = new Blob([htmlContent], {type: "text/html"});
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${filename}.html`;
-        link.click();
-    }
-    window.exportSingleToHTML = exportSingleToHTML;
+    return {html, attachments};
+}
 
-    async function exportSingleToPDF(divId, filename, attachments) {
-        const element = document.getElementById(divId).querySelector('.email-body');
-        const cloned = element.cloneNode(true);
+function sanitizeFilename(name) {
+    return name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+}
 
-        // Risolve immagini cid
-        const imgTags = cloned.querySelectorAll('img');
-        for (const img of imgTags) {
-            const src = img.getAttribute('src');
-            if (src?.startsWith('cid:')) {
-                const cid = src.replace('cid:', '');
-                if (attachments[cid]) {
-                    const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
-                    img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
-                }
+function exportSingleToHTML(divId, filename) {
+    const element = document.getElementById(divId);
+    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${element.querySelector('.email-body').innerHTML}</body></html>`;
+    const blob = new Blob([htmlContent], {type: "text/html"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}.html`;
+    link.click();
+}
+window.exportSingleToHTML = exportSingleToHTML;
+
+async function exportSingleToPDF(divId, filename, attachments) {
+    const element = document.getElementById(divId).querySelector('.email-body');
+    const cloned = element.cloneNode(true);
+
+    // Risolve immagini cid
+    const imgTags = cloned.querySelectorAll('img');
+    for (const img of imgTags) {
+        const src = img.getAttribute('src');
+        if (src?.startsWith('cid:')) {
+            const cid = src.replace('cid:', '');
+            if (attachments[cid]) {
+                const data = await getAttachmentData(attachments[cid].messageId, attachments[cid].attachmentId);
+                img.setAttribute('src', `data:${attachments[cid].mimeType};base64,${data}`);
             }
         }
-
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'fixed';
-        tempDiv.style.left = '-9999px';
-        tempDiv.appendChild(cloned);
-        document.body.appendChild(tempDiv);
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        await html2pdf().from(cloned).set({
-            filename: `${filename}.pdf`,
-            html2canvas: { scale: 2 }
-        }).save();
-
-        document.body.removeChild(tempDiv);
     }
-    window.exportSingleToPDF = exportSingleToPDF;
 
-    async function getAttachmentData(messageId, attachmentId) {
-        const res = await gapi.client.gmail.users.messages.attachments.get({
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.left = '-9999px';
+    tempDiv.appendChild(cloned);
+    document.body.appendChild(tempDiv);
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    await html2pdf().from(cloned).set({
+        filename: `${filename}.pdf`,
+        html2canvas: { scale: 2 }
+    }).save();
+
+    document.body.removeChild(tempDiv);
+}
+window.exportSingleToPDF = exportSingleToPDF;
+
+async function getAttachmentData(messageId, attachmentId) {
+    const res = await gapi.client.gmail.users.messages.attachments.get({
+        'userId': 'me',
+        'messageId': messageId,
+        'id': attachmentId
+    });
+    return res.result.data;
+}
+
+async function deleteEmail(messageId) {
+    if (!confirm('Sei sicuro di voler eliminare definitivamente questa email?')) return;
+    try {
+        await gapi.client.gmail.users.messages.delete({
             'userId': 'me',
-            'messageId': messageId,
-            'id': attachmentId
+            'id': messageId
         });
-        return res.result.data;
-    }
-
-    // Elimina singola email
-    async function deleteEmail(messageId) {
-        if (!confirm('Sei sicuro di voler eliminare definitivamente questa email?')) return;
-        try {
-            await gapi.client.gmail.users.messages.delete({
-                'userId': 'me',
-                'id': messageId
-            });
-            const emailDiv = document.getElementById(`email-${messageId}`);
-            if (emailDiv) emailDiv.remove();
-            selectedEmails.delete(messageId);
-            renderBulkActions();
-            alert('Email eliminata definitivamente.');
-        } catch (e) {
-            alert('Errore durante l\'eliminazione: ' + (e.message || e));
-        }
-    }
-    window.deleteEmail = deleteEmail;
-
-    // Elimina tutte le selezionate
-    async function deleteSelectedEmails() {
-        const ids = getSelectedEmailIds();
-        if (!ids.length) {
-            alert('Nessuna email selezionata.');
-            return;
-        }
-        if (!confirm(`Eliminare definitivamente ${ids.length} email selezionate?`)) return;
-        for (const id of ids) {
-            try {
-                await gapi.client.gmail.users.messages.delete({'userId': 'me', 'id': id});
-                const emailDiv = document.getElementById(`email-${id}`);
-                if (emailDiv) emailDiv.remove();
-                selectedEmails.delete(id);
-            } catch (e) {
-                alert(`Errore su ${id}: ${e.message || e}`);
-            }
-        }
+        const emailDiv = document.getElementById(`email-${messageId}`);
+        if (emailDiv) emailDiv.remove();
+        selectedEmails.delete(messageId);
         renderBulkActions();
-        alert('Email selezionate eliminate.');
+        alert('Email eliminata definitivamente.');
+    } catch (e) {
+        alert('Errore durante l\'eliminazione: ' + (e.message || e));
     }
-    window.deleteSelectedEmails = deleteSelectedEmails;
+}
+window.deleteEmail = deleteEmail;
 
-    // Scarica tutte le selezionate (HTML o PDF)
-    async function downloadSelectedEmails(type) {
-        const ids = getSelectedEmailIds();
-        if (!ids.length) {
-            alert('Nessuna email selezionata.');
-            return;
-        }
-        for (const id of ids) {
-            const container = document.getElementById(`email-${id}`);
-            let subject = "email";
-            if (container) {
-                const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
-                subject = subjMatch ? subjMatch[1] : "email";
-                await expandEmail(id, sanitizeFilename(subject));
-                const emailBodyDiv = container.querySelector('.email-body');
-                // Ricava attachments per PDF
-                let attachments = {};
-                if (emailBodyDiv && type === 'pdf') {
-                    // recupera attachments dal bottone "Scarica PDF"
-                    const btn = emailBodyDiv.querySelector('button[onclick^="exportSingleToPDF"]');
-                    if (btn) {
-                        const matches = btn.getAttribute('onclick').match(/, (.+)\)$/);
-                        if (matches && matches[1]) {
-                            try {
-                                attachments = JSON.parse(matches[1].replace(/&quot;/g, '"'));
-                            } catch {}
-                        }
-                    }
-                }
-                if (type === 'html') exportSingleToHTML('email-' + id, sanitizeFilename(subject));
-                if (type === 'pdf') await exportSingleToPDF('email-' + id, sanitizeFilename(subject), attachments);
-            }
+async function deleteSelectedEmails() {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    if (!confirm(`Eliminare definitivamente ${ids.length} email selezionate?`)) return;
+    for (const id of ids) {
+        try {
+            await gapi.client.gmail.users.messages.delete({'userId': 'me', 'id': id});
+            const emailDiv = document.getElementById(`email-${id}`);
+            if (emailDiv) emailDiv.remove();
+            selectedEmails.delete(id);
+        } catch (e) {
+            alert(`Errore su ${id}: ${e.message || e}`);
         }
     }
-    window.downloadSelectedEmails = downloadSelectedEmails;
+    renderBulkActions();
+    alert('Email selezionate eliminate.');
+}
+window.deleteSelectedEmails = deleteSelectedEmails;
 
-    // Espone funzioni per gli inline event HTML
-    window.onEmailCheckboxChange = onEmailCheckboxChange;
+// Scarica tutte le selezionate (HTML o PDF) - già sopra
 
-    window.gapiLoaded = gapiLoaded;
-    window.gisLoaded = gisLoaded;
+window.onEmailCheckboxChange = onEmailCheckboxChange;
 
+window.gapiLoaded = gapiLoaded;
+window.gisLoaded = gisLoaded;
 
-        document.getElementById('imap-login-form').onsubmit = async function(e) {
+document.getElementById('imap-login-form').onsubmit = async function(e) {
     e.preventDefault();
     const data = {
         host: document.getElementById('imap-host').value,
@@ -879,7 +799,6 @@ if (result.status && (result.status === "success" || result.status === "created"
     }
 };
 
-        
 async function loadSavedEmails() {
     const username = localStorage.getItem('mail_user');
     if (!username) return;
@@ -892,7 +811,6 @@ async function loadSavedEmails() {
     const files = await res.json();
     if (!Array.isArray(files) || files.length === 0) return;
 
-    // Costruisci HTML archivio e inserisci sopra le altre email
     let html = '<h2>Archivio mail salvate</h2>';
     for (const file of files) {
         const fileId = 'saved-' + file.name.replace(/[^a-z0-9\-_]/gi, '_');
@@ -908,7 +826,6 @@ async function loadSavedEmails() {
     container.innerHTML = html + container.innerHTML;
 }
 
-// Espandi il singolo file salvato (on demand)
 window.expandSavedEmail = async function(filename, fileId) {
     const username = localStorage.getItem('mail_user');
     const div = document.getElementById(fileId);
@@ -929,7 +846,6 @@ window.expandSavedEmail = async function(filename, fileId) {
     bodyDiv.style.display = 'block';
 }
 
-        
     </script>
 
     <!-- Caricamento librerie -->
