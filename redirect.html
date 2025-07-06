@@ -160,6 +160,20 @@
     
     <div id="tabs-bar" style="display:flex;justify-content:center;margin:22px 0;">
   <script>
+
+      window.addEventListener('DOMContentLoaded', function() {
+    if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
+        const loginPopup = document.getElementById('login-popup');
+        if (loginPopup) loginPopup.remove();
+        // Mostra HUD username se vuoi
+        const hudDiv = document.getElementById('hud-username');
+        if (hudDiv) {
+            hudDiv.innerHTML = localStorage.getItem('mail_user');
+            hudDiv.style.display = 'block';
+        }
+    }
+});
+      
       // Ogni tab: { id, label, type, loaded, loader }
 const tabs = [];
 
