@@ -348,7 +348,6 @@ async function downloadSelectedEmails(type) {
     const activeTab = tabs.find(t => t.active);
 
     if (activeTab.type === "gmail") {
-        // 1. Espandi e carica TUTTE le email selezionate PRIMA di scaricare
         for (const id of ids) {
             const container = document.getElementById(`email-${id}`);
             if (!container) continue;
@@ -357,26 +356,21 @@ async function downloadSelectedEmails(type) {
             subject = subjMatch ? subjMatch[1] : "email";
             const filename = sanitizeFilename(subject);
 
-            // Mostra SEMPRE il corpo (anche se già visibile, richiama la funzione che lo forza aperto)
-            await window.expandCollapseGmail(id, container.querySelector('.expand-collapse'), filename);
-
-            // Attendi che il corpo sia popolato (max 4s)
-            let bodyDiv = container.querySelector('.email-body');
-            let waited = 0;
-            while (
-                (!bodyDiv || bodyDiv.style.display === 'none' || bodyDiv.innerHTML.trim() === '' || bodyDiv.innerHTML.trim() === 'Caricamento...') &&
-                waited < 4000
-            ) {
-                await new Promise(r => setTimeout(r, 80));
-                bodyDiv = container.querySelector('.email-body');
-                waited += 80;
-            }
-            // Alla fine: il body è sicuramente visibile e pieno!
-            if (bodyDiv) bodyDiv.style.display = "block";
+            // FORZA caricamento corpo mail come richiesto
+            const bodyDiv = container.querySelector('.email-body');
+            bodyDiv.innerHTML = 'Caricamento...';
+            // Carica il messaggio completo
+            const msg = await gapi.client.gmail.users.messages.get({
+                'userId': 'me',
+                'id': id
+            });
+            const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+            bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
+            bodyDiv.style.display = 'block';
         }
     }
 
-    // 2. Ora scarica tutte le email (che sono sicuramente caricate e aperte!)
+    // Ora scarica tutte
     for (const id of ids) {
         const container = document.getElementById(`email-${id}`);
         if (!container) continue;
