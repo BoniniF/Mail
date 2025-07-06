@@ -141,6 +141,8 @@
     <input type="checkbox" id="select_all" /> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
     <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
     <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
+    <!-- Nel bulk actions -->
+<button onclick="saveSelectedToAccount()">Salva selezionate su account</button>
     <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
 </div>
 
@@ -583,6 +585,51 @@ function onEmailCheckboxChange(checkbox) {
     }
     renderBulkActions();
 }
+
+
+async function downloadSelectedEmails(type) {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    for (const id of ids) {
+        const container = document.getElementById(`email-${id}`);
+        let subject = "email";
+        if (container) {
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            // Espandi PRIMA di scaricare
+            await expandEmail(id, sanitizeFilename(subject));
+            if (type === 'html') exportSingleToHTML('email-' + id, sanitizeFilename(subject));
+            // Se vuoi il PDF aggiungi qui la logica come già facevi
+        }
+    }
+}
+window.downloadSelectedEmails = downloadSelectedEmails;
+
+    
+    async function saveSelectedToAccount() {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    for (const id of ids) {
+        const container = document.getElementById(`email-${id}`);
+        let subject = "email";
+        if (container) {
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            // Espandi PRIMA di salvare
+            await expandEmail(id, sanitizeFilename(subject));
+            await saveEmailToAccount(sanitizeFilename(subject), 'email-'+id);
+        }
+    }
+    alert('Email selezionate salvate su account!');
+}
+window.saveSelectedToAccount = saveSelectedToAccount;
+    
 function renderBulkActions() {
     const checkboxes = document.querySelectorAll('.email-checkbox');
     const bulkActions = document.getElementById('bulk-actions');
@@ -656,6 +703,26 @@ function extractBodyAndAttachments(payload, messageId) {
     }
     return {html};
 }
+
+async function expandEmail(messageId, filename) {
+    const container = document.getElementById(`email-${messageId}`);
+    const bodyDiv = container.querySelector('.email-body');
+    // Già caricata?
+    if (bodyDiv.style.display !== 'none' && bodyDiv.innerHTML.trim() !== '' && bodyDiv.innerHTML.trim() !== 'Caricamento...') {
+        return;
+    }
+    bodyDiv.innerHTML = 'Caricamento...';
+    // Carica il messaggio completo
+    const msg = await gapi.client.gmail.users.messages.get({
+        'userId': 'me',
+        'id': messageId
+    });
+    const { html, attachments } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+    bodyDiv.innerHTML = html + /* ...altri bottoni... */;
+    bodyDiv.style.display = 'block';
+}
+
+    
 function decodeBase64Url(base64) {
     const decoded = atob(base64.replace(/-/g, '+').replace(/_/g, '/'));
     const bytes = Uint8Array.from(decoded, c => c.charCodeAt(0));
@@ -680,6 +747,28 @@ function parseStorageFilename(filename) {
         from: (parts[2] || '').trim()
     };
 }
+
+async function saveSelectedToAccount() {
+    const ids = getSelectedEmailIds();
+    if (!ids.length) {
+        alert('Nessuna email selezionata.');
+        return;
+    }
+    for (const id of ids) {
+        const container = document.getElementById(`email-${id}`);
+        let subject = "email";
+        if (container) {
+            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)<br>/);
+            subject = subjMatch ? subjMatch[1] : "email";
+            // Espandi PRIMA di salvare
+            await expandEmail(id, sanitizeFilename(subject));
+            await saveEmailToAccount(sanitizeFilename(subject), 'email-'+id);
+        }
+    }
+    alert('Email selezionate salvate su account!');
+}
+window.saveSelectedToAccount = saveSelectedToAccount;
+    
 </script>
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
