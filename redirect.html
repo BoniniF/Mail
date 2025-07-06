@@ -348,41 +348,41 @@ async function downloadSelectedEmails(type) {
     for (const id of ids) {
         const container = document.getElementById(`email-${id}`);
         let subject = "email";
-        if (container) {
-            // Prova a estrarre l'oggetto
-            const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
-            subject = subjMatch ? subjMatch[1] : "email";
-            const filename = sanitizeFilename(subject);
+        if (!container) continue;
+        // Estrai oggetto
+        const subjMatch = container.innerHTML.match(/<strong>Oggetto:<\/strong>\s*([^<]*)/);
+        subject = subjMatch ? subjMatch[1] : "email";
+        const filename = sanitizeFilename(subject);
+        const bodyDiv = container.querySelector('.email-body');
 
-            const bodyDiv = container.querySelector('.email-body');
-
-            // Gmail: se il corpo è vuoto o non caricato, lo carica ora!
-            if (activeTab.type === 'gmail') {
-                await ensureGmailBodyLoaded(id, bodyDiv);
+        // GMAIL: FORZA SEMPRE IL CARICAMENTO DEL CORPO se non c'è, e ATTENDI che sia popolato
+        if (activeTab.type === 'gmail') {
+            // Se non c'è HTML nel bodyDiv o contiene solo placeholder
+            if (
+                !bodyDiv.innerHTML || 
+                bodyDiv.innerHTML.trim() === '' || 
+                bodyDiv.innerHTML.trim() === 'Caricamento...' || 
+                bodyDiv.innerHTML.trim() === '<i>Nessun contenuto</i>'
+            ) {
+                // fetch completo del messaggio, come fa expandCollapseGmail
+                bodyDiv.innerHTML = 'Caricamento...';
+                const msg = await gapi.client.gmail.users.messages.get({
+                    'userId': 'me',
+                    'id': id
+                });
+                const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
+                bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
             }
+        }
 
-            // Outlook: di solito già pronto, altrimenti aggiungi fetch qui se serve
-
-            // Ora esporta
-            if (type === 'html') {
-                exportSingleToHTML('email-' + id, filename);
-            }
+        // Ora esporta (sia Outlook che Gmail)
+        if (type === 'html') {
+            exportSingleToHTML('email-' + id, filename);
         }
     }
 }
 
-// Nuova funzione helper per Gmail (carica corpo mail se vuoto)
-async function ensureGmailBodyLoaded(msgId, bodyDiv) {
-    if (!bodyDiv) return;
-    if (bodyDiv.innerHTML && bodyDiv.innerHTML !== '' && bodyDiv.innerHTML !== 'Caricamento...') return;
-    // Carica da API solo se non c'è già il corpo
-    const msg = await gapi.client.gmail.users.messages.get({
-        'userId': 'me',
-        'id': msgId
-    });
-    const { html } = extractBodyAndAttachments(msg.result.payload, msg.result.id);
-    bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
-}
+
 
 // Funzione di export singolo (come nel tuo codice)
 function exportSingleToHTML(divId, filename) {
