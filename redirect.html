@@ -103,31 +103,35 @@
 }
 
 
-        #user-dropdown {
-    display: none;
+#user-dropdown {
+    display: block; /* sempre presente per gestire meglio le animazioni */
     position: absolute;
     left: 50%;
-    top: calc(100% + 8px); /* appena sotto hud */
-    transform: translateX(-50%) scaleY(0);
+    top: calc(100% + 8px);
+    transform-origin: top center;   /* punto d'origine = centro alto */
     
-    min-width: 260px; /* LARGHEZZA MINIMA PIÙ GRANDE DEL NOME */
-
+    min-width: 260px;
     background-color: rgba(255,255,255,0.97);
     
    border-radius: 22px;
    box-shadow: 0px 10px 32px -6px rgba(20,60,30,.14);
 
-   padding:24px;
-
+   padding-top :20px ;
+   padding-bottom :24px ;
+ 
+   
    z-index :99999;
 
-   transition:
-      opacity .23s cubic-bezier(.33,.82,.46,.98),
-      transform .27s cubic-bezier(.42,-0.01,.78,.89)
-     ;
+     opacity:.03;
+     pointer-events:none;
 
-   opacity:.08; pointer-events:none;
-}
+     transform :
+        translateX(-50%) scale(.5)
+         ;
+
+      transition:
+          opacity .18s cubic-bezier(.43,-0.07,.95,.92),
+          transform .33s cubic-bezier(.
 
 /* Mostra dropdown all'hover su #hud-username o sulla stessa tendina */
 #hud-username:hover + #user-dropdown,
