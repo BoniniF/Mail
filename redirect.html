@@ -102,36 +102,54 @@
     margin-left: 15px;
 }
 
+#hud-username {
+  display: inline-block;
+  position: relative;
+  z-index:10; /* per stare sopra */
+}
 
+/* Dropdown base nascosto */
 #user-dropdown {
-    display: block; /* sempre presente per gestire meglio le animazioni */
-    position: absolute;
-    left: 50%;
-    top: calc(100% + 8px);
-    transform-origin: top center;   /* punto d'origine = centro alto */
-    
-    min-width: 260px;
-    background-color: rgba(255,255,255,0.97);
-    
-   border-radius: 22px;
-   box-shadow: 0px 10px 32px -6px rgba(20,60,30,.14);
+    display:block; /* sempre presente per l'animazione! */
+    pointer-events:none;
 
-   padding-top :20px ;
-   padding-bottom :24px ;
- 
+    position:absolute;
+    left:50%;
+    top:calc(100% + .5em);
+    
+    min-width :260px ;
+    
+   background-color:#fff9fa ; 
+   border-radius :22px ;
+   box-shadow :0px 8px 32px -6px rgba(20,60,30,.12);
+
+   padding :24px ;
+
+   opacity:.08;  
    
+      transform:
+        translateX(-50%) scale(.4);/* piccolo & centrato */
+
+     transition :
+          transform .34s cubic-bezier(.29,.97,.54,1.7),
+          opacity .21s cubic-bezier(.33,.82,.46,.98)
+      ;
+
    z-index :99999;
 
-     opacity:.03;
-     pointer-events:none;
 
-     transform :
-        translateX(-50%) scale(.5)
-         ;
+}
 
-      transition:
-          opacity .18s cubic-bezier(.43,-0.07,.95,.92),
-          transform .33s cubic-bezier(.
+/* Bubble effect on hover username or dropdown itself*/
+#hud-username:hover + #user-dropdown,
+#user-dropdown:hover {
+     pointer-events:auto;
+     opacity:.995;
+
+     transform:
+         translateX(-50%) scale(1.00); /* torna grande e visibile */
+
+}
 
 /* Mostra dropdown all'hover su #hud-username o sulla stessa tendina */
 #hud-username:hover + #user-dropdown,
@@ -158,6 +176,20 @@
 }
 #user-dropdown button:last-child {margin-bottom :0;}
 #user-dropdown button:hover {background:#013220;color:white;}
+
+
+@keyframes bubbleIn {
+ from {opacity:.06;transform:translateX(-50%) scale(.15);}
+ to {opacity:.995;transform:translateX(-50%) scale(1);}
+}
+
+#hud-username:hover + #user-dropdown,
+#user-dropdown:hover {
+ animation:bubbleIn .42s cubic-bezier(.35,-0.13 ,.72 ,2 ) forwards !important;
+ pointer-events:auto!important;}
+/* resetta all’uscita mouse (opzionale) */
+#user-dropdown:not(:hover):not(#hud-username:hover){
+animation:none !important;}
         
 
 @media (max-width:600px) {
