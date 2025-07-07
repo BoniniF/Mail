@@ -488,14 +488,18 @@ async function loadSavedEmails(containerId = 'tab-archivio-content') {
     for (const file of files) {
         const fileId = 'saved-' + file.name.replace(/[^a-z0-9\-_]/gi, '_');
         const meta = parseStorageFilename(file.name);
-        html += `
-            <div class="email" id="${fileId}">
-                <strong>Oggetto:</strong> ${meta.subject}<br>
-                <strong>Data:</strong> ${meta.date}<br>
-                <strong>Da:</strong> ${meta.from}<br>
-                <span class="expand-collapse" onclick="expandCollapseSaved('${file.name}', '${fileId}', this)" aria-expanded="false">▶</span>
-                <div class="email-body"></div>
-            </div>
+html += `
+    <div class="email" id="${fileId}">
+        <strong>Oggetto:</strong> ${meta.subject}<br>
+        <strong>Data:</strong> ${meta.date}<br>
+        <strong>Da:</strong> ${meta.from}<br>
+        <span class="expand-collapse" onclick="expandCollapseSaved('${file.name}', '${fileId}', this)" aria-expanded="false">▶</span>
+        <div class="email-body"></div>
+        <div>
+            <button onclick="exportSavedToHTML('${file.name}', '${fileId}')">Scarica HTML</button>
+            <button onclick="deleteSavedEmail('${file.name}', '${fileId}')">Elimina</button>
+        </div>
+    </div>
         `;
     }
     div.innerHTML = html;
@@ -563,22 +567,25 @@ async function fetchOutlookMessages(token, containerId) {
         div.innerHTML = 'Nessun messaggio trovato nella casella Outlook.';
         return;
     }
-    const output = data.value.map(msg => `
-        <div class="email" id="email-${msg.id}">
-            <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
-            <span class="expand-collapse" onclick="expandCollapseEmail('email-${msg.id}', this)" aria-expanded="false">▶</span>
-            <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;
-            <span class="email-date">${msg.receivedDateTime ? new Date(msg.receivedDateTime).toLocaleString() : ''}</span><br>
-            <strong>Oggetto:</strong> ${msg.subject || '(Senza oggetto)'}
-            <button style="float:right" onclick="exportOutlookToHTML('email-${msg.id}')">Scarica HTML</button>
-            <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
+   const output = data.value.map(msg => `
+    <div class="email" id="email-${msg.id}">
+        <input type="checkbox" class="email-checkbox" data-id="${msg.id}" onchange="onEmailCheckboxChange(this)">
+        <strong>Da:</strong> ${msg.from?.emailAddress?.name || ''} &lt;${msg.from?.emailAddress?.address || ''}&gt;
+        <span class="email-date">${msg.receivedDateTime ? new Date(msg.receivedDateTime).toLocaleString() : ''}</span><br>
+        <strong>Oggetto:</strong> ${msg.subject || '(Senza oggetto)'}
+        <span class="expand-collapse" onclick="expandCollapseEmail('email-${msg.id}', this)" aria-expanded="false">▶</span>
+        <div class="email-body">${msg.body?.contentType === 'html' ? msg.body.content : escapeHtml(msg.body?.content || '')}</div>
+        <div>
+            <button onclick="exportOutlookToHTML('email-${msg.id}', '${sanitizeFilename(msg.subject || 'email')}')">Scarica HTML</button>
+            <button onclick="deleteOutlookEmail('${msg.id}')">Elimina</button>
         </div>
+    </div>
     `);
     div.innerHTML = output.join('');
     document.querySelectorAll(`#${containerId} .email-body`).forEach(e=>e.style.display='none');
 }
 
-// GMAIL
+// GMAIL <button style="float:right" onclick="exportOutlookToHTML('email-${msg.id}')">Scarica HTML</button>
 async function loadGmailTab(tab, container) {
     const contentId = tab.id + '-content';
     container.innerHTML = `<div id="${contentId}"></div>`;
@@ -624,14 +631,18 @@ async function fetchGmailMessages(containerId) {
             ? (new Date(Number(msg.result.internalDate))).toLocaleString()
             : (headers.find(h => h.name === 'Date')?.value || '');
         const divId = `email-${msg.result.id}`;
-        output.push(`
-            <div class="email" id="${divId}">
-                <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
-                <strong>Da:</strong> ${from} <span class="email-date">${date}</span><br>
-                <strong>Oggetto:</strong> ${subject}<br>
-          <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
-                    <div class='email-body' id='body-${msg.result.id}'></div>
-            </div>
+output.push(`
+    <div class="email" id="${divId}">
+        <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
+        <strong>Da:</strong> ${from} <span class="email-date">${date}</span><br>
+        <strong>Oggetto:</strong> ${subject}<br>
+        <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
+        <div class='email-body' id='body-${msg.result.id}'></div>
+        <div>
+            <button onclick="exportGmailToHTML('email-${msg.result.id}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
+            <button onclick="deleteGmailEmail('${msg.result.id}')">Elimina</button>
+        </div>
+    </div>
         `);
     }
     div.innerHTML = output.join('');
@@ -699,6 +710,26 @@ function onEmailCheckboxChange(checkbox) {
     }
     renderBulkActions();
 }
+window.exportGmailToHTML = async function(divId, filename) {
+    const div = document.getElementById(divId);
+    const bodyDiv = div.querySelector('.email-body');
+    // Se ancora chiusa, aprila e attendi caricamento
+    if (bodyDiv.style.display === 'none' || !bodyDiv.innerHTML) {
+        await window.expandCollapseGmail(divId.replace('email-',''), null, filename);
+    }
+    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
+    const blob = new Blob([htmlContent], {type: "text/html"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename + ".html";
+    link.click();
+};
+window.deleteGmailEmail = async function(id) {
+    if (!confirm("Eliminare definitivamente questa email?")) return;
+    await gapi.client.gmail.users.messages.delete({'userId': 'me', 'id': id});
+    document.getElementById(`email-${id}`)?.remove();
+};
+    
 function renderBulkActions() {
     const checkboxes = document.querySelectorAll('.email-checkbox');
     const bulkActions = document.getElementById('bulk-actions');
@@ -722,6 +753,17 @@ document.getElementById('select_all').addEventListener('change', function () {
     renderBulkActions();
 });
 
+window.deleteOutlookEmail = async function(id) {
+    if (!confirm("Eliminare questa email da Outlook?")) return;
+    const token = localStorage.getItem('outlook_access_token');
+    await fetch(`https://graph.microsoft.com/v1.0/me/messages/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    document.getElementById(`email-${id}`)?.remove();
+};
+
+    
 // Elimina email selezionate (solo Gmail, puoi adattare per Outlook)
 async function deleteSelectedEmails() {
     const ids = Array.from(selectedEmails);
@@ -811,6 +853,38 @@ async function saveSelectedToAccount() {
     alert('Email selezionate salvate su account!');
 }
 window.saveSelectedToAccount = saveSelectedToAccount;
+
+window.exportSavedToHTML = function(filename, fileId) {
+    const div = document.getElementById(fileId);
+    const bodyDiv = div.querySelector('.email-body');
+    // Se ancora chiusa, aprila e attendi
+    if (bodyDiv.style.display === 'none' || !bodyDiv.innerHTML) {
+        expandCollapseSaved(filename, fileId, null).then(() => {
+            doExport();
+        });
+    } else {
+        doExport();
+    }
+    function doExport() {
+        const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
+        const blob = new Blob([htmlContent], {type: "text/html"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename + ".html";
+        link.click();
+    }
+};
+window.deleteSavedEmail = async function(filename, fileId) {
+    if (!confirm("Eliminare questa email dall'archivio?")) return;
+    await fetch('./mail_storage_api.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', username: localStorage.getItem('mail_user'), filename })
+    });
+    document.getElementById(fileId)?.remove();
+};
+
+        
 function parseStorageFilename(filename) {
     const sep = '.----------------.';
     const name = filename.replace(/\.html$/i, '');
