@@ -102,6 +102,60 @@
     margin-left: 15px;
 }
 
+
+        #user-dropdown {
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 8px); /* appena sotto hud */
+    transform: translateX(-50%) scaleY(0);
+    
+    min-width: 260px; /* LARGHEZZA MINIMA PIÙ GRANDE DEL NOME */
+
+    background-color: rgba(255,255,255,0.97);
+    
+   border-radius: 22px;
+   box-shadow: 0px 10px 32px -6px rgba(20,60,30,.14);
+
+   padding:24px;
+
+   z-index :99999;
+
+   transition:
+      opacity .23s cubic-bezier(.33,.82,.46,.98),
+      transform .27s cubic-bezier(.42,-0.01,.78,.89)
+     ;
+
+   opacity:.08; pointer-events:none;
+}
+
+/* Mostra dropdown all'hover su #hud-username o sulla stessa tendina */
+#hud-username:hover + #user-dropdown,
+#user-dropdown:hover {
+     display:block !important;
+     opacity:.995; 
+     pointer-events:auto;
+
+     transform :translateX(-50%) scaleY(1);
+}
+
+#user-dropdown button {
+        margin-bottom :12px ;
+        width :100%;
+        font-size :1em ;
+        border:none ;
+        outline:none ;  
+        background:#357AE8 ; color:#fff ;
+         padding :.7em ;
+         border-radius :13pt ; 
+         cursor:pointer ; 
+         transition :.18s background ;
+
+}
+#user-dropdown button:last-child {margin-bottom :0;}
+#user-dropdown button:hover {background:#013220;color:white;}
+        
+
 @media (max-width:600px) {
     #bulk-actions {
         width: 98vw;
@@ -164,6 +218,11 @@
     -webkit-backdrop-filter:blur(4px);
     font-size:2em; 
     z-index:10000;">
+</div>
+    <div id="user-dropdown">
+    <button onclick="alert('Impostazioni')">Impostazioni</button>
+    <button onclick="alert('Logout')">Logout</button>
+    <!-- altri pulsanti -->
 </div>
 
 
@@ -989,6 +1048,22 @@ function parseStorageFilename(filename) {
         from: (parts[2] || '').trim()
     };
 }
+
+    function repositionDropdown() {
+ const hud = document.getElementById("hud-username");
+ const dd = document.getElementById("user-dropdown");
+ if(!hud || !dd) return;
+
+ // Prendi le coordinate relative a viewport dell'HUD
+ const rect = hud.getBoundingClientRect();
+
+ dd.style.position = "absolute";
+ dd.style.left = rect.left + rect.width /2 +"px";
+ dd.style.top=rect.bottom+8+"px";
+}
+window.addEventListener("resize",repositionDropdown);
+// richiama appena mostri HUD username!
+document.getElementById('hud-username').addEventListener('mouseenter',repositionDropdown);
 </script>
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
