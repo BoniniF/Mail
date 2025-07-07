@@ -629,7 +629,7 @@ async function fetchGmailMessages(containerId) {
                 <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
                 <strong>Da:</strong> ${from} <span class="email-date">${date}</span><br>
                 <strong>Oggetto:</strong> ${subject}<br>
-                 <span class="expand-collapse" onclick="expandCollapseSaved('${file.name}', '${fileId}', this)" aria-expanded="false">▶</span>
+          <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
                     <div class='email-body' id='body-${msg.result.id}'></div>
             </div>
         `);
