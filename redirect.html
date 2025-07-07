@@ -630,7 +630,7 @@ async function fetchGmailMessages(containerId) {
                 <strong>Da:</strong> ${from} <span class="email-date">${date}</span><br>
                 <strong>Oggetto:</strong> ${subject}
 <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
-<summary>Mostra contenuto</summary><br>
+<summary>Mostra contenuto</summary>
                     <div class="email-body">${email.body_html || email.body}</div>
             </div>
         `);
