@@ -578,6 +578,7 @@ async function fetchOutlookMessages(token, containerId) {
         <div>
             <button onclick="exportOutlookToHTML('email-${msg.id}', '${sanitizeFilename(msg.subject || 'email')}')">Scarica HTML</button>
             <button onclick="deleteOutlookEmail('${msg.id}')">Elimina</button>
+            <button onclick="saveEmailToAccount('${sanitizeFilename(msg.subject || 'email')}', 'email-${msg.id}')">Salva su account</button>
         </div>
     </div>
     `);
@@ -641,6 +642,7 @@ output.push(`
         <div>
             <button onclick="exportGmailToHTML('email-${msg.result.id}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
             <button onclick="deleteGmailEmail('${msg.result.id}')">Elimina</button>
+        <button onclick="saveEmailToAccount('${sanitizeFilename(subject)}', 'email-${msg.result.id}')">Salva su account</button>
         </div>
     </div>
         `);
@@ -832,6 +834,34 @@ function escapeHtml(text) {
 function getSelectedEmailIds() {
         return Array.from(selectedEmails);
     }
+
+async function saveEmailToAccount(filename, divId) {
+    const bodyDiv = document.getElementById(divId).querySelector('.email-body');
+    if (!bodyDiv.innerHTML || bodyDiv.style.display === 'none') {
+        // Espandi prima
+        await expandEmail(divId.replace('email-', ''), filename);
+    }
+    const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
+    const username = localStorage.getItem('mail_user');
+    if (!username) {
+        alert("Login richiesto");
+        return;
+    }
+
+    const res = await fetch('./save_html.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, filename, html})
+    });
+
+    const data = await res.json();
+    if (data.success) {
+        alert('Mail salvata con successo.');
+    } else {
+        alert('Errore salvataggio: ' + (data.message || ''));
+    }
+}
+window.saveEmailToAccount = saveEmailToAccount;
     
 async function saveSelectedToAccount() {
     const ids = getSelectedEmailIds();
