@@ -494,7 +494,6 @@ async function loadSavedEmails(containerId = 'tab-archivio-content') {
                 <strong>Data:</strong> ${meta.date}<br>
                 <strong>Da:</strong> ${meta.from}<br>
                 <span class="expand-collapse" onclick="expandCollapseSaved('${file.name}', '${fileId}', this)" aria-expanded="false">▶</span>
-                <button style="float:right" onclick="exportSavedToHTML('${file.name}', '${fileId}')">Scarica HTML</button>
                 <div class="email-body"></div>
             </div>
         `;
@@ -523,15 +522,15 @@ window.expandCollapseSaved = async function(filename, fileId, el) {
     bodyDiv.innerHTML = data.html || 'Errore.';
     bodyDiv.style.display = 'block';
 };
-window.exportSavedToHTML = function(filename, fileId) {
-    const div = document.getElementById(fileId);
-    const bodyDiv = div.querySelector('.email-body');
-    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
-    const blob = new Blob([htmlContent], {type: "text/html"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
+//window.exportSavedToHTML = function(filename, fileId) {
+ //   const div = document.getElementById(fileId);
+ //   const bodyDiv = div.querySelector('.email-body');
+//    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
+//    const blob = new Blob([htmlContent], {type: "text/html"});
+  //  const link = document.createElement("a");
+    //link.href = URL.createObjectURL(blob);
+   // link.download = filename;
+   // link.click();
 };
 
 // OUTLOOK
@@ -627,11 +626,11 @@ async function fetchGmailMessages(containerId) {
         output.push(`
             <div class="email" id="${divId}">
                 <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
-                <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
-                <strong>Da:</strong> ${from}
-                <span class="email-date">${date}</span><br>
+                <strong>Da:</strong> ${from} <span class="email-date">${date}</span><br>
                 <strong>Oggetto:</strong> ${subject}
-                <button style="float:right" onclick="exportGmailToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
+                <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
+                <details><summary>Mostra contenuto</summary>
+ // <button style="float:right" onclick="exportGmailToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
                 <div class="email-body"></div>
             </div>
         `);
