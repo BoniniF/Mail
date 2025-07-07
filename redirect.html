@@ -622,19 +622,26 @@ async function fetchGmailMessages(containerId) {
         const date = msg.result.internalDate
             ? (new Date(Number(msg.result.internalDate))).toLocaleString()
             : (headers.find(h => h.name === 'Date')?.value || '');
-        const divId = `email-${msg.result.id}`;
-        output.push(`
-            <div class="email" id="${divId}">
-                <input type="checkbox" class="email-checkbox" data-id="${msg.result.id}" onchange="onEmailCheckboxChange(this)">
-                <strong>Da:</strong> ${from} <span class="email-date">${date}</span><br>
-                <strong>Oggetto:</strong> ${subject}
-                <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
-                <details>
+        const divId = "email-" + msg.result.id;
+output.push(`
+<div class="email" id="${divId}">
+    <input type="checkbox" class="email-checkbox"
+        data-id="${msg.result.id}"
+        onchange="onEmailCheckboxChange(this)">
+    <strong>Da:</strong> ${escapeHtml(from)} 
+    <span class="email-date">${escapeHtml(date)}</span><br>
+    <strong>Oggetto:</strong> ${escapeHtml(subject)}
+    <span class="expand-collapse"
+          onclick='expandCollapseEmail("${divId}", this)'
+          aria-expanded='false'>▶</span>
+
+     <details>
          <summary>Mostra contenuto</summary>
          <div class='email-body'></div>
      </details>
-            </div>
-        `);
+
+</div>`
+);
     }
     div.innerHTML = output.join('');
 }
