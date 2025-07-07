@@ -630,14 +630,13 @@ async function fetchGmailMessages(containerId) {
                 <strong>Oggetto:</strong> ${subject}
                 <span class="expand-collapse" onclick="expandCollapseGmail('${msg.result.id}', this, '${sanitizeFilename(subject)}')" aria-expanded="false">▶</span>
                 <details><summary>Mostra contenuto</summary>
- // <button style="float:right" onclick="exportGmailToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
                 <div class="email-body"></div>
             </div>
         `);
     }
     div.innerHTML = output.join('');
 }
-
+// <button style="float:right" onclick="exportGmailToHTML('${divId}', '${sanitizeFilename(subject)}')">Scarica HTML</button>
 // Espansione/collapse per Outlook e Gmail
 window.expandCollapseEmail = function(divId, el) {
     const bodyDiv = document.getElementById(divId).querySelector('.email-body');
