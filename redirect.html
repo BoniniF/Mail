@@ -787,6 +787,11 @@ function escapeHtml(text) {
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
     }[m])) : '';
 }
+
+function getSelectedEmailIds() {
+        return Array.from(selectedEmails);
+    }
+    
 async function saveSelectedToAccount() {
     const ids = getSelectedEmailIds();
     if (!ids.length) {
