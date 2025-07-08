@@ -160,10 +160,13 @@ align-items: center;
 
      transform :translateX(-50%) scaleY(1);
 }
-
+.dropdown-buttons {
+    display: flex;
+    gap: 12px; /* spazio tra bottoni */
+}
 #user-dropdown button {
-        margin-bottom :12px ;
-        width :100%;
+        margin-bottom : 0 ;
+        width :auto;
         font-size :1em ;
         border:none ;
         outline:none ;  
@@ -256,6 +259,7 @@ animation:none !important;}
     z-index:10000;">
 </div>
     <div id="user-dropdown">
+        <div class="dropdown-buttons">
     <div class="g_id_signin"
          data-type="standard"
          data-shape="rectangular"
@@ -276,6 +280,7 @@ animation:none !important;}
          data-auto_prompt="false">
     </div>
 </div>
+    </div>
 
 
 <!-- IMAP/Other Email Services -->
