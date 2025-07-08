@@ -113,7 +113,7 @@
 
 /* Dropdown base nascosto */
 #user-dropdown {
-    display:block; /* sempre presente per l'animazione! */
+    display:none; /* sempre presente per l'animazione! */
     pointer-events:none;
 align-items: center;
     position:fixed;
@@ -273,16 +273,20 @@ animation:none !important;}
     width: 100%;
 }
 
-        #hud-caret {
+#hud-caret {
   margin-left: 10px;
   font-size: 0.7em;
   user-select: none;
   transition: transform 0.18s;
-  /* eventuale colore: */
   color: #013220;
+  cursor: pointer;
 }
 #hud-caret.open {
   transform: rotate(180deg);
+}
+#user-dropdown {
+  display: none; /* gestito via JS */
+  /* il resto dei tuoi stili rimane */
 }
         
     </style>
@@ -495,10 +499,9 @@ document.getElementById('login-form').onsubmit = async function(e) {
             window.USERNAME = username;
             mail_user = username;
             const hudDiv = document.getElementById('hud-username');
-            if(hudDiv) {
-                hudDiv.innerHTML = username;
-                hudDiv.style.display = 'block';
-            }
+           if(hudDiv) {
+    patchHudLogin(username);
+}
             document.getElementById('login-popup')?.remove();
             renderTabs();
             selectTab(tabs[0].id);
@@ -509,7 +512,91 @@ document.getElementById('login-form').onsubmit = async function(e) {
         alert("Errore durante il login: " + err);
     }
 };
+function patchHudLogin(username) {
+  const hudDiv = document.getElementById('hud-username');
+  const hudName = document.getElementById('hud-username-text');
+  const hudCaret = document.getElementById('hud-caret');
+  if (hudDiv && hudCaret && hudName) {
+    hudName.textContent = username;
+    hudDiv.style.display = 'block';
+    hudCaret.textContent = '▲';
+    hudCaret.classList.remove('open');
+  }
+}
+    (function() {
+  let userDropdownOpen = false;
+  const hudUsername = document.getElementById('hud-username');
+  const hudCaret = document.getElementById('hud-caret');
+  const userDropdown = document.getElementById('user-dropdown');
 
+  // Toggle con click
+  hudUsername.addEventListener('click', function(e) {
+    userDropdownOpen = !userDropdownOpen;
+    updateUserDropdown();
+    repositionDropdown();
+    e.stopPropagation();
+  });
+
+  // Apri/chiudi con hover
+  hudUsername.addEventListener('mouseenter', function() {
+    userDropdownOpen = true;
+    updateUserDropdown();
+    repositionDropdown();
+  });
+  hudUsername.addEventListener('mouseleave', function(e) {
+    if (!userDropdown.contains(e.relatedTarget)) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
+  userDropdown.addEventListener('mouseenter', function() {
+    userDropdownOpen = true;
+    updateUserDropdown();
+    repositionDropdown();
+  });
+  userDropdown.addEventListener('mouseleave', function(e) {
+    if (!hudUsername.contains(e.relatedTarget)) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
+
+  document.addEventListener('click', function() {
+    if (userDropdownOpen) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
+
+  function updateUserDropdown() {
+    if (userDropdownOpen) {
+      userDropdown.style.display = "block";
+      hudCaret.textContent = '▼';
+      hudCaret.classList.add('open');
+    } else {
+      userDropdown.style.display = "none";
+      hudCaret.textContent = '▲';
+      hudCaret.classList.remove('open');
+    }
+    repositionDropdown();
+  }
+
+  // riposiziona su scroll/resize
+  window.addEventListener("resize", repositionDropdown);
+  window.addEventListener("scroll", repositionDropdown, true);
+
+  function repositionDropdown() {
+    if (!userDropdownOpen) return;
+    const hud = hudUsername;
+    const dd = userDropdown;
+    if(!hud || !dd) return;
+    const rect = hud.getBoundingClientRect();
+    dd.style.position = "fixed";
+    dd.style.left = (rect.left + rect.width / 2) + "px";
+    dd.style.top = (rect.bottom + 3) + "px";
+    dd.style.transform = "translateX(-50%)";
+  }
+})();
 // OUTLOOK LOGIN
 document.getElementById('outlook_login').onclick = async function() {
     const activeTab = tabs.find(t => t.active);
