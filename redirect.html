@@ -747,17 +747,7 @@ function exportRawHTML(html, filename) {
     link.click();
 }
 
-const hudCaret = document.getElementById('hud-caret');
 
-if(hudCaret){
-    hudCaret.addEventListener("click", function(e){
-        userDropdownOpen = !userDropdownOpen;
-        updateUserDropdown();
-        repositionDropdown();
-        // NON propagare oltre!
-        e.stopPropagation(); 
-    });
-}
 
 // Funzione di export singolo (come nel tuo codice)
 function exportSingleToHTML(divId, filename) {
