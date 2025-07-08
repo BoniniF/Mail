@@ -273,13 +273,14 @@ animation:none !important;}
 }
 
 #hud-caret {
-  margin-left: 10px;
-  font-size: 0.7em;
-  user-select: none;
-  transition: transform 0.18s;
-  color: #013220;
-  cursor: pointer;
-     display: inline-block;
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    top: calc(var(--m-hud-top,0px) + var(--m-hud-height,56px) - 8px); /* vedi nota */
+    font-size: 0.7em;
+    color: #013220;
+    cursor:pointer;
+    z-index:10001;
 }
 #hud-caret.open {
   transform: rotate(180deg);
@@ -327,8 +328,8 @@ animation:none !important;}
     font-size:2em; 
     z-index:10000;">
     <span id="hud-username-text"></span>
-     <span id="hud-caret" style="margin-left:10px;font-size:0.7em;z-index:30000;">▲</span>
 </div>
+    <span id="hud-caret" style="margin-left:10px;font-size:0.7em;z-index:30000;">▲</span>
     <div id="user-dropdown" style="background: rgba(255,255,255,0.3);
     color:#013220; 
     padding:8px 22px 12px 22px;
