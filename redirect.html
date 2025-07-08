@@ -592,13 +592,13 @@ if(!dropdownPinned){
 /// Uscendo dalla tendina torno allo stato base:
 userDropdown.addEventListener("mouseleave",(e)=>{
 	if(!dropdownPinned && !hudUsername.contains(e.relatedTarget)){
-		user_dropdown_open=false;update_user_dropdown();}
+		userDropdownOpen=false;update_user_dropdown();}
 });
 
 // Chiudi tutto sul click fuori:
 document.body.addEventListener("click",function(){
-	if(user_dropdown_open&&!dropdown_pinned){
-		user_dropdown_open=false;update_user_dropdown();}
+	if(userDropdownOpen&&!dropdown_pinned){
+		userDropdownOpen=false;update_user_dropdown();}
 });
 // NB: lasciando pinned=TRUE serve un secondo click per richiudere! Così funziona come toggle reale.
 // Se vuoi farlo tornare auto-hide anche dopo aver scelto qualcosa nel menù -> basta settare pinned/false altrove.
