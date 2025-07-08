@@ -590,7 +590,7 @@ if(!dropdownPinned){
 });
 
 /// Uscendo dalla tendina torno allo stato base:
-userDropdwon.addEventListener("mouseleave",(e)=>{
+userDropdown.addEventListener("mouseleave",(e)=>{
 	if(!dropdownPinned && !hudUsername.contains(e.relatedTarget)){
 		user_dropdown_open=false;update_user_dropdown();}
 });
