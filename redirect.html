@@ -256,14 +256,24 @@ animation:none !important;}
     z-index:10000;">
 </div>
     <div id="user-dropdown">
-    <button onclick="alert('Impostazioni')">Impostazioni</button>
-    <button onclick="alert('Logout')">Logout</button>
     <div class="g_id_signin"
          data-type="standard"
          data-shape="rectangular"
          data-theme="outline"
          data-text="signin_with"
          data-size="large">
+    </div>
+        <button id="outlook_login" style="display: flex; align-items: center; gap: 8px;">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg/32px-Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg.png"
+       alt="" width="24" height="24">
+   Accedi con Outlook
+</button>
+    <div id="g_id_onload"
+         data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
     </div>
 </div>
 
@@ -282,18 +292,6 @@ animation:none !important;}
 
 <div>
     <button id="signout_button" style="display:none;">Disconnettiti</button>
-    <button id="outlook_login" style="display: flex; align-items: center; gap: 8px;">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg/32px-Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg.png"
-       alt="" width="24" height="24">
-   Accedi con Outlook
-</button>
-    <div id="g_id_onload"
-         data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
-    </div>
     
 </div>
 
