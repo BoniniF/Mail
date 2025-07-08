@@ -272,6 +272,18 @@ animation:none !important;}
     justify-content: center;
     width: 100%;
 }
+
+        #hud-caret {
+  margin-left: 10px;
+  font-size: 0.7em;
+  user-select: none;
+  transition: transform 0.18s;
+  /* eventuale colore: */
+  color: #013220;
+}
+#hud-caret.open {
+  transform: rotate(180deg);
+}
         
     </style>
 </head>
@@ -311,6 +323,7 @@ animation:none !important;}
     -webkit-backdrop-filter:blur(4px);
     font-size:2em; 
     z-index:10000;">
+     <span id="hud-caret" style="margin-left:10px;font-size:0.7em;">▲</span>
 </div>
     <div id="user-dropdown" style="background: rgba(255,255,255,0.3);
     color:#013220; 
