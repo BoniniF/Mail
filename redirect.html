@@ -575,7 +575,7 @@ function patchHudLogin(username) {
         */
         if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {      
             userDropdownOpen=false;       
-            updateUserDropboxwn();
+            updateUserDropdown();
         }
         
      });
@@ -584,9 +584,9 @@ function patchHudLogin(username) {
 // La tendina resta visibile mentre ci sei sopra col mouse...
 userDropdown.addEventListener("mouseenter",()=>{
 if(!dropdownPinned){
-	userDropboxwn=true;
-	updateUserDropboxwn();
-	repositionDroppdown();}
+	userDropdownOpen=true;
+	updateUserDropdown();
+	repositionDropdown();}
 });
 
 /// Uscendo dalla tendina torno allo stato base:
