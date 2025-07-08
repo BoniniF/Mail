@@ -539,15 +539,7 @@ function setupHudDropdownEvents() {
   let userDropdownOpen = false;
   let dropdownPinned = false;
 
-function updateUserDropdown() {
-    if (userDropdownOpen) {
-        userDropdown.style.display = 'block';
-        userDropdown.classList.toggle('pinned', dropdownPinned);
-    } else {
-        userDropdown.style.display = 'none';
-        userDropdown.classList.remove('pinned');
-    }
-}
+
 
 hudUsername.addEventListener('click', function(e) {
     repositionDropdown(); // per sicurezza
@@ -560,7 +552,6 @@ hudUsername.addEventListener('click', function(e) {
   hudUsername.addEventListener('mouseenter', function() {
     if (!dropdownPinned) {
       userDropdownOpen = true;
-      updateUserDropdown();
       repositionDropdown();
     }
   });
@@ -568,14 +559,12 @@ hudUsername.addEventListener('click', function(e) {
   hudUsername.addEventListener('mouseleave', function(e) {
     if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {
       userDropdownOpen = false;
-      updateUserDropdown();
     }
   });
 
   userDropdown.addEventListener("mouseenter", () => {
     if (!dropdownPinned) {
       userDropdownOpen = true;
-      updateUserDropdown();
       repositionDropdown();
     }
   });
@@ -583,14 +572,12 @@ hudUsername.addEventListener('click', function(e) {
   userDropdown.addEventListener("mouseleave", (e) => {
     if (!dropdownPinned && !hudUsername.contains(e.relatedTarget)) {
       userDropdownOpen = false;
-      updateUserDropdown();
     }
   });
 
   document.body.addEventListener("click", () => {
     if (userDropdownOpen && !dropdownPinned) {
       userDropdownOpen = false;
-      updateUserDropdown();
     }
   });
 }
