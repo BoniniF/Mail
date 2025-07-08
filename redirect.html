@@ -529,7 +529,7 @@ function patchHudLogin(username) {
   let dropdownPinned = false;
 
   const hudUsername = document.getElementById('hud-username');
-  const hudCaret = document.getElementById('hud-caret'); // se serve!
+  const hudCaret = document.getElementById('hud-caret');
   const userDropdown = document.getElementById('user-dropdown');
 
   function updateUserDropdown() {
@@ -540,44 +540,68 @@ function patchHudLogin(username) {
     }
   }
 
-  // Click: fissa/sblocca il menu
+  // Click: Fissa/sblocca
   hudUsername.addEventListener('click', function(e) {
-    if(dropdownPinned && userDropdownOpen) {
-      // Se già pinnato e aperto, chiudi/pinna via toggle
-      dropdownPinned = false;
-      userDropdownOpen = false;
-    } else {
-      dropdownPinned = true;
-      userDropdownOpen = true;
+    // Se già aperto & pinnato => chiudi
+    if(dropdownPinned && userDropdownOpen){
+      dropdownPinned=false;
+      userDropdownOpen=false;
+      updateUserDropdown();
+      return;
     }
-    updateUserDropdown();
-    repositionDropdown();
-    e.stopPropagation();
-  });
+    
+    // Altrimenti apri & pinna!
+    dropdownPinned=true; 
+    userDropdownOpen=true; 
+      
+     updateUserDropdown();
+     repositionDropdown();
 
-  // Hover apre SOLO SE NON pinnato!
-  hudUsername.addEventListener('mouseenter', function() {
-    if(!dropdownPinned) { 
-        userDropdownOpen=true; 
-        updateUserDropdown(); 
-        repositionDropdown(); 
-     }
+     // Previeni bubbling così da evitare interferenze con altri handler globali eventuali
+     e.stopPropagation();
    });
-  
-   hudUsername.addEventListener('mouseleave', function(e){
-     if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {      
-         userDropdownOpen=false;       
-         updateUserDropdown();    
-     }
-   });
+
+   // Hover apre SOLO se NON pinnato!
+   hudUsername.addEventListener('mouseenter', function() { 
+       if(!dropdownPinned){ 
+         userDropdownOpen=true; 
+         updateUserDropdown(); repositionDropdown(); 
+       }});
    
-   // Stessa cosa sulla tendina stessa:
-   userDropdown.addEventListener('mouseenter',function(){
-       if(!dropdownPinned){            
-           userDropboxDown=true;        
-           updateUserDropdwon();         
-           repositionDroppdown();}
-       }); 
+   hudUsername.addEventListener('mouseleave',function(e){
+        /*
+          Se NON sto passando sulla tendina stessa,
+           allora nascondo solo se non è "pinned"
+        */
+        if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {      
+            userDropdownOpen=false;       
+            updateUserDropboxwn();
+        }
+        
+     });
+     
+     
+// La tendina resta visibile mentre ci sei sopra col mouse...
+userDrodpown.addEventListener("mouseenter",()=>{
+if(!dropdownPinned){
+	userDropboxwn=true;
+	updateUserDropboxwn();
+	repositionDroppdown();}
+});
+
+/// Uscendo dalla tendina torno allo stato base:
+userDropdwon.addEventListener("mouseleave",(e)=>{
+	if(!dropdownPinned && !hudUsername.contains(e.relatedTarget)){
+		user_dropdown_open=false;update_user_dropdown();}
+});
+
+// Chiudi tutto sul click fuori:
+document.body.addEventListener("click",function(){
+	if(user_dropdown_open&&!dropdown_pinned){
+		user_dropdown_open=false;update_user_dropdown();}
+});
+// NB: lasciando pinned=TRUE serve un secondo click per richiudere! Così funziona come toggle reale.
+// Se vuoi farlo tornare auto-hide anche dopo aver scelto qualcosa nel menù -> basta settare pinned/false altrove.
 
 })();
 
