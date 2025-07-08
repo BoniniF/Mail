@@ -549,19 +549,13 @@ function updateUserDropdown() {
     }
 }
 
-  hudUsername.addEventListener('click', function(e) {
-    if (dropdownPinned && userDropdownOpen) {
-      dropdownPinned = false;
-      userDropdownOpen = false;
-      updateUserDropdown();
-      return;
-    }
-    dropdownPinned = true;
-    userDropdownOpen = true;
-    updateUserDropdown();
-    repositionDropdown();
-    e.stopPropagation();
-  });
+hudUsername.addEventListener('click', function(e) {
+    repositionDropdown(); // per sicurezza
+    userDropdown.style.display = 'block';
+    userDropdown.style.opacity = '1';
+    userDropdown.style.pointerEvents = 'auto';
+    userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+});
 
   hudUsername.addEventListener('mouseenter', function() {
     if (!dropdownPinned) {
