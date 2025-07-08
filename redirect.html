@@ -521,88 +521,73 @@ function patchHudLogin(username) {
     hudDiv.style.display = 'block';
     hudCaret.textContent = '▲';
     hudCaret.classList.remove('open');
+
+	   setupHudDropdownEvents();
   }
 }
-(function() {
-  let userDropdownOpen = false;
-  let dropdownPinned = false;
-
+function setupHudDropdownEvents() {
   const hudUsername = document.getElementById('hud-username');
   const hudCaret = document.getElementById('hud-caret');
   const userDropdown = document.getElementById('user-dropdown');
+  let userDropdownOpen = false;
+  let dropdownPinned = false;
 
   function updateUserDropdown() {
-    if (userDropdownOpen) {
-      userDropdown.style.display = 'block';
-    } else {
-      userDropdown.style.display = 'none';
-    }
+    userDropdown.style.display = userDropdownOpen ? 'block' : 'none';
   }
 
-  // Click: Fissa/sblocca
   hudUsername.addEventListener('click', function(e) {
-    // Se già aperto & pinnato => chiudi
-    if(dropdownPinned && userDropdownOpen){
-      dropdownPinned=false;
-      userDropdownOpen=false;
+    if (dropdownPinned && userDropdownOpen) {
+      dropdownPinned = false;
+      userDropdownOpen = false;
       updateUserDropdown();
       return;
     }
-    
-    // Altrimenti apri & pinna!
-    dropdownPinned=true; 
-    userDropdownOpen=true; 
-      
-     updateUserDropdown();
-     repositionDropdown();
+    dropdownPinned = true;
+    userDropdownOpen = true;
+    updateUserDropdown();
+    repositionDropdown();
+    e.stopPropagation();
+  });
 
-     // Previeni bubbling così da evitare interferenze con altri handler globali eventuali
-     e.stopPropagation();
-   });
+  hudUsername.addEventListener('mouseenter', function() {
+    if (!dropdownPinned) {
+      userDropdownOpen = true;
+      updateUserDropdown();
+      repositionDropdown();
+    }
+  });
 
-   // Hover apre SOLO se NON pinnato!
-   hudUsername.addEventListener('mouseenter', function() { 
-       if(!dropdownPinned){ 
-         userDropdownOpen=true; 
-         updateUserDropdown(); repositionDropdown(); 
-       }});
-   
-   hudUsername.addEventListener('mouseleave',function(e){
-        /*
-          Se NON sto passando sulla tendina stessa,
-           allora nascondo solo se non è "pinned"
-        */
-        if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {      
-            userDropdownOpen=false;       
-            updateUserDropdown();
-        }
-        
-     });
-     
-     
-// La tendina resta visibile mentre ci sei sopra col mouse...
-userDropdown.addEventListener("mouseenter",()=>{
-if(!dropdownPinned){
-	userDropdownOpen=true;
-	updateUserDropdown();
-	repositionDropdown();}
-});
+  hudUsername.addEventListener('mouseleave', function(e) {
+    if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
 
-/// Uscendo dalla tendina torno allo stato base:
-userDropdown.addEventListener("mouseleave",(e)=>{
-	if(!dropdownPinned && !hudUsername.contains(e.relatedTarget)){
-		userDropdownOpen=false;update_user_dropdown();}
-});
+  userDropdown.addEventListener("mouseenter", () => {
+    if (!dropdownPinned) {
+      userDropdownOpen = true;
+      updateUserDropdown();
+      repositionDropdown();
+    }
+  });
 
-// Chiudi tutto sul click fuori:
-document.body.addEventListener("click",function(){
-	if(userDropdownOpen&&!dropdown_pinned){
-		userDropdownOpen=false;update_user_dropdown();}
-});
-// NB: lasciando pinned=TRUE serve un secondo click per richiudere! Così funziona come toggle reale.
-// Se vuoi farlo tornare auto-hide anche dopo aver scelto qualcosa nel menù -> basta settare pinned/false altrove.
+  userDropdown.addEventListener("mouseleave", (e) => {
+    if (!dropdownPinned && !hudUsername.contains(e.relatedTarget)) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
 
-})();
+  document.body.addEventListener("click", () => {
+    if (userDropdownOpen && !dropdownPinned) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
+}
+
 
     
 // OUTLOOK LOGIN
