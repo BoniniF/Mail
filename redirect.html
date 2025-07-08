@@ -525,68 +525,49 @@ function patchHudLogin(username) {
   }
 }
     (function() {
-
-
+  let userDropdownOpen = false;
+  const hudUsername = document.getElementById('hud-username');
   const hudCaret = document.getElementById('hud-caret');
- 
+  const userDropdown = document.getElementById('user-dropdown');
 
   // Toggle con click
+  hudUsername.addEventListener('click', function(e) {
+    userDropdownOpen = !userDropdownOpen;
+    updateUserDropdown();
+    repositionDropdown();
+    e.stopPropagation();
+  });
 
   // Apri/chiudi con hover
-
- 
-const hudUsername = document.getElementById('hud-username');
-const userDropdown = document.getElementById('user-dropdown');
-
-let userDropdownOpen = false;      // Stato "bloccato" da click?
-let hoveringHudOrMenu = false;     // Mouse sopra barra/menu?
-
-function showDropdown() {
-    userDropdown.style.display = 'block';
-}
-function hideDropdown() {
-    if (!userDropdownOpen) {       // Chiudi solo se non bloccato da click!
-        userDropdown.style.display = 'none';
+  hudUsername.addEventListener('mouseenter', function() {
+    userDropdownOpen = true;
+    updateUserDropdown();
+    repositionDropdown();
+  });
+  hudUsername.addEventListener('mouseleave', function(e) {
+    if (!userDropdown.contains(e.relatedTarget)) {
+      userDropdownOpen = false;
+      updateUserDropdown();
     }
-}
+  });
+  userDropdown.addEventListener('mouseenter', function() {
+    userDropdownOpen = true;
+    updateUserDropdown();
+    repositionDropdown();
+  });
+  userDropdown.addEventListener('mouseleave', function(e) {
+    if (!hudUsername.contains(e.relatedTarget)) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
 
-// HOVER LOGIC ────────────── //
-[hudUsername, userDropdown].forEach(el => {
-    el.addEventListener("mouseenter", () => {
-        hoveringHudOrMenu = true;
-        showDropdown();
-    });
-    el.addEventListener("mouseleave", () => {
-        hoveringHudOrMenu = false;
-        setTimeout(() => {         // Piccolo delay evita flicker quando si passa fra parent/child!
-            if (!hoveringHudOrMenu && !userDropdownOpen) hideDropdown();
-        }, 50);
-    });
-});
-
-// CLICK LOGIC ────────────── //
-hudUsername.addEventListener('click', function(e){
-    e.stopPropagation();
-
-hudUsername.addEventListener('click', function(e){
-    e.stopPropagation();
-
-if(userDropdownOpen){
-     userDropdownOpen = false;
-     hideDropdown();
-}
-
-   showDropdown();
-   userDropdownOpen = true;
-});
-
-/* CLIC FUORI CHIUDE SOLO SE APERTO DA CLICK! */
-document.addEventListener('click', function(){
-     if(userDropDownOpen){
-         userDropDownOpen=false;
-         hideDropDown();
-     }
-});
+  document.addEventListener('click', function() {
+    if (userDropdownOpen) {
+      userDropdownOpen = false;
+      updateUserDropdown();
+    }
+  });
 
   function updateUserDropdown() {
     if (userDropdownOpen) {
@@ -809,12 +790,6 @@ window.gisLoaded = function() {
         callback: '', // impostata dinamicamente
     });
     gisInited = true;
-}
-        function gapiLoaded(){
-    // Qui puoi inizializzare servizi google api...
-}
-function gisLoaded(){
-    // Qui eventuale codice auth identity services...
 }
 
 // ARCHIVIO
