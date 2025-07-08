@@ -526,10 +526,19 @@ function patchHudLogin(username) {
 }
 (function() {
   let userDropdownOpen = false;
-  let dropdownPinned = false; // <--- AGGIUNTA IMPORTANTE!
+  let dropdownPinned = false;
+
   const hudUsername = document.getElementById('hud-username');
-  const hudCaret = document.getElementById('hud-caret');
+  const hudCaret = document.getElementById('hud-caret'); // se serve!
   const userDropdown = document.getElementById('user-dropdown');
+
+  function updateUserDropdown() {
+    if (userDropdownOpen) {
+      userDropdown.style.display = 'block';
+    } else {
+      userDropdown.style.display = 'none';
+    }
+  }
 
   // Click: fissa/sblocca il menu
   hudUsername.addEventListener('click', function(e) {
