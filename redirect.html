@@ -510,7 +510,7 @@ document.getElementById('login-form').onsubmit = async function(e) {
 };
 function patchHudLogin(username) {
   const hudDiv = document.getElementById('hud-username');
-  const hudName = document.getElementById('hud-username-text');
+  const hudName = document.getElementById('hud-username');
   const hudCaret = document.getElementById('hud-caret');
   if (hudDiv && hudCaret && hudName) {
     hudName.textContent = username;
