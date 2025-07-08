@@ -116,7 +116,7 @@
     display:block; /* sempre presente per l'animazione! */
     pointer-events:none;
 align-items: center;
-    position:absolute;
+    position:fixed;
     left:50%;
     top:100%
     
@@ -1153,21 +1153,28 @@ function parseStorageFilename(filename) {
     };
 }
 
-    function repositionDropdown() {
- const hud = document.getElementById("hud-username");
- const dd = document.getElementById("user-dropdown");
- if(!hud || !dd) return;
+function repositionDropdown() {
+    const hud = document.getElementById("hud-username");
+    const dd = document.getElementById("user-dropdown");
+    if(!hud || !dd) return;
 
- // Prendi le coordinate relative a viewport dell'HUD
- const rect = hud.getBoundingClientRect();
+    // Prendi le coordinate relative a viewport dell'HUD
+    const rect = hud.getBoundingClientRect();
 
- dd.style.position = "absolute";
- dd.style.left = rect.left + rect.width /2 +"px";
- dd.style.top=rect.bottom+3+"px";
+    // Usa position: fixed per seguire sempre l'HUD
+    dd.style.position = "fixed";
+    dd.style.left = (rect.left + rect.width / 2) + "px";
+    dd.style.top = (rect.bottom + 3) + "px";
+    dd.style.transform = "translateX(-50%)";
 }
-window.addEventListener("resize",repositionDropdown);
-// richiama appena mostri HUD username!
-document.getElementById('hud-username').addEventListener('mouseenter',repositionDropdown);
+
+// Riposiziona su resize, scroll e ogni volta che si mostra il menu
+window.addEventListener("resize", repositionDropdown);
+window.addEventListener("scroll", repositionDropdown, true);
+
+document.getElementById('hud-username').addEventListener('mouseenter', repositionDropdown);
+document.getElementById('hud-username').addEventListener('focus', repositionDropdown);
+document.getElementById('user-dropdown').addEventListener('mouseenter', repositionDropdown);
 </script>
 <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
