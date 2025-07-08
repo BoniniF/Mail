@@ -568,15 +568,16 @@ function hideDropdown() {
 hudUsername.addEventListener('click', function(e){
     e.stopPropagation();
 
-    if(userDropdownOpen){          // Già bloccato? Sblocca e nascondi subito ↓↓ 
-      user Dropdown Open=false ;
-      hide Dropdown ();
-      return;
-   }
+hudUsername.addEventListener('click', function(e){
+    e.stopPropagation();
 
-   /* Altrimenti bloccalo aperto */
-   show Dropdown ();
-   user Drop down open=true ;
+if(userDropdownOpen){
+     userDropdownOpen = false;
+     hideDropdown();
+}
+
+   showDropdown();
+   userDropdownOpen = true;
 });
 
 /* CLIC FUORI CHIUDE SOLO SE APERTO DA CLICK! */
@@ -808,6 +809,12 @@ window.gisLoaded = function() {
         callback: '', // impostata dinamicamente
     });
     gisInited = true;
+}
+        function gapiLoaded(){
+    // Qui puoi inizializzare servizi google api...
+}
+function gisLoaded(){
+    // Qui eventuale codice auth identity services...
 }
 
 // ARCHIVIO
