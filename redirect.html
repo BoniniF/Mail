@@ -294,17 +294,18 @@ animation:none !important;}
   display: none; /* gestito via JS */
   /* il resto dei tuoi stili rimane */
 }
-	    #hud-click-catcher {
+#hud-click-catcher {
   position: fixed;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 240px; /* stessa larghezza di hud-username o più */
-  height: 48px; /* altezza sufficiente a coprire anche un po’ sopra */
-  z-index: 10001; /* sopra hud-username ma sotto il dropdown */
+  width: max-content;
+  height: 100%;
+  z-index: 60001;
   background: transparent;
   cursor: pointer;
 }
+
         
     </style>
 </head>
@@ -544,99 +545,77 @@ function patchHudLogin(username) {
 	   setupHudDropdownEvents();
   }
 }
-function setupHudDropdownEvents() {
+
+
+	function setupHudDropdownEvents() {
   const hudUsername = document.getElementById('hud-username');
   const hudCaret = document.getElementById('hud-caret');
   const userDropdown = document.getElementById('user-dropdown');
-  let userDropdownOpen = false;
+  const catcher = document.getElementById('hud-click-catcher');
   let dropdownPinned = false;
 
-document.getElementById('hud-click-catcher').addEventListener('click', function (e) {
-    e.stopPropagation();
-    dropdownPinned = !dropdownPinned;
+  function showDropdown() {
     repositionDropdown();
+    userDropdown.style.display = 'block';
+    userDropdown.style.opacity = '1';
+    userDropdown.style.pointerEvents = 'auto';
+    userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+  }
 
-    const userDropdown = document.getElementById('user-dropdown');
-    const hudCaret = document.getElementById('hud-caret');
+  function hideDropdown() {
+    userDropdown.style.display = 'none';
+    userDropdown.style.opacity = '0';
+    userDropdown.style.pointerEvents = 'none';
+    userDropdown.style.transform = 'translateX(-50%) scale(.4)';
+    hudCaret.classList.remove('open');
+  }
 
-    if (dropdownPinned) {
-        userDropdown.style.display = 'block';
-        userDropdown.style.opacity = '1';
-        userDropdown.style.pointerEvents = 'auto';
-        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
-        hudCaret?.classList.add('open');
-    } else {
-        userDropdown.style.display = 'none';
-        userDropdown.style.opacity = '0';
-        userDropdown.style.pointerEvents = 'none';
-        userDropdown.style.transform = 'translateX(-50%) scale(.4)';
-        hudCaret?.classList.remove('open');
-    }
-});
+  catcher.addEventListener('mouseenter', () => {
+    if (!dropdownPinned) showDropdown();
+  });
 
-
-hudUsername.addEventListener('click', function(e) {
-    e.stopPropagation();
-    dropdownPinned = !dropdownPinned;
-    repositionDropdown();
-
-    if (dropdownPinned) {
-        userDropdown.style.display = 'block';
-        userDropdown.style.opacity = '1';
-        userDropdown.style.pointerEvents = 'auto';
-        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
-    } else {
-        hideDropdown();
-    }
-
-    hudCaret.classList.toggle('open', dropdownPinned);
-});
-
-
-hudUsername.addEventListener('mouseenter', function () {
-    if (!dropdownPinned) {
-        userDropdown.style.display = 'block';
-        userDropdown.style.opacity = '1';
-        userDropdown.style.pointerEvents = 'auto';
-        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
-        repositionDropdown();
-    }
-});
-
-hudUsername.addEventListener('mouseleave', function (e) {
+  catcher.addEventListener('mouseleave', (e) => {
     if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {
-        hideDropdown();
-    }
-});
-
-userDropdown.addEventListener('mouseenter', function () {
-    if (!dropdownPinned) {
-        userDropdown.style.opacity = '1';
-        userDropdown.style.pointerEvents = 'auto';
-        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
-    }
-});
-
-userDropdown.addEventListener('mouseleave', function (e) {
-    if (!dropdownPinned && !hudUsername.contains(e.relatedTarget)) {
-        hideDropdown();
-    }
-});
-
-
-  userDropdown.addEventListener("mouseleave", (e) => {
-    if (!dropdownPinned && !hudUsername.contains(e.relatedTarget)) {
-      userDropdownOpen = false;
+      hideDropdown();
     }
   });
 
-document.body.addEventListener("click", () => {
-    if (!dropdownPinned) {
-        hideDropdown();
+  catcher.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownPinned = !dropdownPinned;
+    if (dropdownPinned) {
+      showDropdown();
+      hudCaret.classList.add('open');
+    } else {
+      hideDropdown();
     }
-});
+  });
 
+  userDropdown.addEventListener('mouseleave', (e) => {
+    if (!dropdownPinned && !catcher.contains(e.relatedTarget)) {
+      hideDropdown();
+    }
+  });
+
+  document.body.addEventListener('click', () => {
+    if (!dropdownPinned) {
+      hideDropdown();
+    }
+  });
+
+  window.addEventListener('resize', repositionCatcher);
+  window.addEventListener('scroll', repositionCatcher, true);
+  repositionCatcher();
+
+  function repositionCatcher() {
+    const hud = hudUsername.getBoundingClientRect();
+    catcher.style.top = `${hud.top}px`;
+    catcher.style.left = `${hud.left}px`;
+    catcher.style.width = `${hud.width}px`;
+    catcher.style.height = `${hud.height}px`;
+  }
 }
+
 
 
     function hideDropdown() {
