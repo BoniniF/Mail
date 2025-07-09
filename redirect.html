@@ -542,11 +542,15 @@ function setupHudDropdownEvents() {
 
 
 hudUsername.addEventListener('click', function(e) {
-    repositionDropdown(); // per sicurezza
+    e.stopPropagation(); // previeni chiusura immediata da event bubbling
+    dropdownPinned = !dropdownPinned;
+    repositionDropdown();
     userDropdown.style.display = 'block';
     userDropdown.style.opacity = '1';
     userDropdown.style.pointerEvents = 'auto';
     userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+
+    hudCaret.classList.toggle('open', dropdownPinned);
 });
 
   hudUsername.addEventListener('mouseenter', function() {
@@ -575,11 +579,17 @@ hudUsername.addEventListener('click', function(e) {
     }
   });
 
-  document.body.addEventListener("click", () => {
+document.body.addEventListener("click", () => {
     if (userDropdownOpen && !dropdownPinned) {
-      userDropdownOpen = false;
+        userDropdown.style.display = 'none';
+        userDropdown.style.opacity = '0';
+        userDropdown.style.pointerEvents = 'none';
+        userDropdown.style.transform = 'translateX(-50%) scale(.4)';
+        dropdownPinned = false;
+        hudCaret.classList.remove('open');
     }
-  });
+});
+
 }
 
 
