@@ -294,6 +294,17 @@ animation:none !important;}
   display: none; /* gestito via JS */
   /* il resto dei tuoi stili rimane */
 }
+	    #hud-click-catcher {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px; /* stessa larghezza di hud-username o più */
+  height: 48px; /* altezza sufficiente a coprire anche un po’ sopra */
+  z-index: 10001; /* sopra hud-username ma sotto il dropdown */
+  background: transparent;
+  cursor: pointer;
+}
         
     </style>
 </head>
@@ -336,6 +347,7 @@ animation:none !important;}
     <span id="hud-username-text"></span>
      <span id="hud-caret" style="margin-left:10px;font-size:0.7em;">▲</span>
 </div>
+	<div id="hud-click-catcher"></div>
     <div id="user-dropdown" style="background: rgba(255,255,255,0.3);
     color:#013220; 
     padding:8px 22px 12px 22px;
@@ -539,6 +551,28 @@ function setupHudDropdownEvents() {
   let userDropdownOpen = false;
   let dropdownPinned = false;
 
+document.getElementById('hud-click-catcher').addEventListener('click', function (e) {
+    e.stopPropagation();
+    dropdownPinned = !dropdownPinned;
+    repositionDropdown();
+
+    const userDropdown = document.getElementById('user-dropdown');
+    const hudCaret = document.getElementById('hud-caret');
+
+    if (dropdownPinned) {
+        userDropdown.style.display = 'block';
+        userDropdown.style.opacity = '1';
+        userDropdown.style.pointerEvents = 'auto';
+        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+        hudCaret?.classList.add('open');
+    } else {
+        userDropdown.style.display = 'none';
+        userDropdown.style.opacity = '0';
+        userDropdown.style.pointerEvents = 'none';
+        userDropdown.style.transform = 'translateX(-50%) scale(.4)';
+        hudCaret?.classList.remove('open');
+    }
+});
 
 
 hudUsername.addEventListener('click', function(e) {
