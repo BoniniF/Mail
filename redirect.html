@@ -542,36 +542,53 @@ function setupHudDropdownEvents() {
 
 
 hudUsername.addEventListener('click', function(e) {
-    e.stopPropagation(); // previeni chiusura immediata da event bubbling
+    e.stopPropagation();
     dropdownPinned = !dropdownPinned;
     repositionDropdown();
-    userDropdown.style.display = 'block';
-    userDropdown.style.opacity = '1';
-    userDropdown.style.pointerEvents = 'auto';
-    userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+
+    if (dropdownPinned) {
+        userDropdown.style.display = 'block';
+        userDropdown.style.opacity = '1';
+        userDropdown.style.pointerEvents = 'auto';
+        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+    } else {
+        hideDropdown();
+    }
 
     hudCaret.classList.toggle('open', dropdownPinned);
 });
 
-  hudUsername.addEventListener('mouseenter', function() {
-    if (!dropdownPinned) {
-      userDropdownOpen = true;
-      repositionDropdown();
-    }
-  });
 
-  hudUsername.addEventListener('mouseleave', function(e) {
+hudUsername.addEventListener('mouseenter', function () {
+    if (!dropdownPinned) {
+        userDropdown.style.display = 'block';
+        userDropdown.style.opacity = '1';
+        userDropdown.style.pointerEvents = 'auto';
+        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+        repositionDropdown();
+    }
+});
+
+hudUsername.addEventListener('mouseleave', function (e) {
     if (!dropdownPinned && !userDropdown.contains(e.relatedTarget)) {
-      userDropdownOpen = false;
+        hideDropdown();
     }
-  });
+});
 
-  userDropdown.addEventListener("mouseenter", () => {
+userDropdown.addEventListener('mouseenter', function () {
     if (!dropdownPinned) {
-      userDropdownOpen = true;
-      repositionDropdown();
+        userDropdown.style.opacity = '1';
+        userDropdown.style.pointerEvents = 'auto';
+        userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
     }
-  });
+});
+
+userDropdown.addEventListener('mouseleave', function (e) {
+    if (!dropdownPinned && !hudUsername.contains(e.relatedTarget)) {
+        hideDropdown();
+    }
+});
+
 
   userDropdown.addEventListener("mouseleave", (e) => {
     if (!dropdownPinned && !hudUsername.contains(e.relatedTarget)) {
@@ -580,20 +597,25 @@ hudUsername.addEventListener('click', function(e) {
   });
 
 document.body.addEventListener("click", () => {
-    if (userDropdownOpen && !dropdownPinned) {
-        userDropdown.style.display = 'none';
-        userDropdown.style.opacity = '0';
-        userDropdown.style.pointerEvents = 'none';
-        userDropdown.style.transform = 'translateX(-50%) scale(.4)';
-        dropdownPinned = false;
-        hudCaret.classList.remove('open');
+    if (!dropdownPinned) {
+        hideDropdown();
     }
 });
 
 }
 
 
-    
+    function hideDropdown() {
+    userDropdown.style.display = 'none';
+    userDropdown.style.opacity = '0';
+    userDropdown.style.pointerEvents = 'none';
+    userDropdown.style.transform = 'translateX(-50%) scale(.4)';
+    hudCaret.classList.remove('open');
+    dropdownPinned = false;
+}
+
+
+	
 // OUTLOOK LOGIN
 document.getElementById('outlook_login').onclick = async function() {
     const activeTab = tabs.find(t => t.active);
