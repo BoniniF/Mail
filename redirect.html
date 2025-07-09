@@ -149,7 +149,18 @@ align-items: center;
 
 }
 
+/* Bubble effect on hover username or dropdown itself*/
+#hud-username:hover + #user-dropdown,
+#user-dropdown:hover {
+     pointer-events:auto;
+     opacity:.995;
 
+     transform:
+         translateX(-50%) scale(1.00); /* torna grande e visibile */
+
+}
+
+/* Mostra dropdown all'hover su #hud-username o sulla stessa tendina */
 
 .dropdown-buttons {
     display: flex;
@@ -270,13 +281,12 @@ align-items: center;
   /* il resto dei tuoi stili rimane */
 }
 #hud-click-catcher {
-  display:none;
-    position:fixed;
-    top:0;
-    left:50%;
-    transform:translateX(-50%);
-    color:#013220; 
-    padding:8px 22px 12px 22px;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  height: 100%;
   z-index: 10001;
   background: transparent;
   cursor: pointer;
@@ -579,9 +589,9 @@ function patchHudLogin(username) {
     }
   });
 
- // window.addEventListener('resize', repositionCatcher);
- // window.addEventListener('scroll', repositionCatcher, true);
-  //repositionCatcher();
+  window.addEventListener('resize', repositionCatcher);
+  window.addEventListener('scroll', repositionCatcher, true);
+  repositionCatcher();
 
   function repositionCatcher() {
     const hud = hudUsername.getBoundingClientRect();
