@@ -383,17 +383,26 @@ z-index: 30000;
 </div>
 
 <!-- Bulk actions UI -->
-<div id="bulk-actions" style="display:none;">
-    <input type="checkbox" id="select_all" /> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
-    <button onclick="deleteSelectedEmails()" style="background:none; border:none; padding:0; cursor:pointer;">
-  <svg id="elrE79f4Ln61" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-    viewBox="0 0 24 24" shape-rendering="geometricPrecision"
-    text-rendering="geometricPrecision">
-    <path d="M5.755,20.283L4,8h16L18.245,20.283c.169082,1.017279-.040965,1.81995-1.98,1.717h-8.53c-1.304862.100763-2.237178-.445096-1.98-1.717ZM20.735,5.122501h-5v-1c0-.552285-.447715-1-1-1-1.720507.603057-4.215847.490823-6,0-.552285,0-1,.447715-1,1v1h-4.430668c-.552285,0-1.231885.447715-1.231885,1s.110268,1,.662553,1h18c.830233,0,.757771-.40248.75777-1s-.75777-1-.75777-1Z" transform="matrix(.781315 0 0 1.069778 2.62422-1.437749)" fill="#fefffe"/>
+<div id="bulk-actions" style="display: block;">
+    <input type="checkbox" id="select_all"> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
+    <button onclick="deleteSelectedEmails()" style="background:#013220; border-radius: 4px; border:none; padding:0; cursor:pointer;">
+  <svg width="20" height="20" id="elrE79f4Ln61" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" shape-rendering="geometricPrecision" text-rendering="geometricPrecision">
+    <path d="M5.755,20.283L4,8h16L18.245,20.283c.169082,1.017279-.040965,1.81995-1.98,1.717h-8.53c-1.304862.100763-2.237178-.445096-1.98-1.717ZM20.735,5.122501h-5v-1c0-.552285-.447715-1-1-1-1.720507.603057-4.215847.490823-6,0-.552285,0-1,.447715-1,1v1h-4.430668c-.552285,0-1.231885.447715-1.231885,1s.110268,1,.662553,1h18c.830233,0,.757771-.40248.75777-1s-.75777-1-.75777-1Z" transform="matrix(.781315 0 0 1.069778 2.62422-1.437749)" fill="#fefffe"></path>
    </svg>
 </button>
-    <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
-    <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
+    <button onclick="downloadSelectedEmails('html')" style="background:#013220; border-radius: 4px; border:none; padding:0; cursor:pointer;">
+  <button onclick="deleteSelectedEmails()" style="background:#013220; border:none; padding:8px 12px; border-radius:1px;">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 500" width="32" height="32">
+    <path d="M0,328.25v-247.7c-6.440113-24.65209,8.150219-41.419824,35.3-35.3h163.412494v-25.60716c-.348063-6.784062,7.002851-12.132723,15-10.39915h19.632894c7.268866-.588231,12.396284,5.044603,11.554612,10.39915L246.024994,45.25h155.775006c31.074794-3.858264,40.868313,13.943896,35.3,35.3v76.9c-43.132848-.261979-79.769859,0-103.229488,0-19.64284,0-25.770512,6.62549-25.770512,23.957407v182.042593l-34.312494.000012c-14.507623-4.028326-15.451906,4.714055-15.019256,10.919415L258,402.85h20.408375c6.304781-1.604781,17.308597,2.583028,16.091625,8.5v24.5c0,4.7,4.7,8.7,0,8.7l-152.1.30256c-4.7,0,0-4.30256,0-9.00256v-19.9c-2.43498-8.246789,9.120499-15.226,16.995872-13.1h19.504128v-28.480573c3.310436-8.461411-5.119008-13.602565-16.062506-10.919415L10.341378,363.45C-9.158622,363.55,0,347.75,0,328.25Zm258-170.8l.76825-24.571963c0-9.243689,10.396435-23.118687,26.572892-23.118687h103.558848L388.9,93.35h-142.875006L244.9,136.427671v25.420144v31.141143h63.2l-87.406911,114.36372-98.271976-106.30243c-4.567691-8.28831,4.621845-11.500249,12.721114-11.500249l63.570267.000001v-27.702185-25.420144-43.077671L48.1,93.35v221.6h209.9v-103.500601M489.8,415.95c0,15.7,0,31.21348-27.6,28.6h-94.4c-27.6,4.9244-27.6-12.9-27.6-28.6l.000012-19.624992L340.2,258.766998v-40.616998c1.33075-18.3615,13.88582-31.57163,27.6-28.6h94.4c13.82816,1.37184,26.15605,14.34395,27.6,28.6v197.8Z" transform="translate(0 1)" fill="#fff"></path>
+    <rect width="95" height="23" rx="8" ry="8" transform="translate(368 245)" fill="none" stroke-width="0"></rect>
+    <rect width="91" height="31" rx="10" ry="10" transform="translate(369 237)" fill="#013220" stroke-width="0"></rect>
+    <rect width="49" height="49" transform="translate(670 278)" fill="#d2dbed" stroke-width="0"></rect>
+   </svg>
+</button>
+          
+          
+</button>
+    <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;">Selezionate: 1</span>
     <button onclick="saveSelectedToAccount()">Salva selezionate su account</button>
 </div>
 
