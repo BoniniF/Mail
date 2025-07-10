@@ -452,6 +452,7 @@ function renderTabs() {
 	
 function openTabSelector() {
     addTab('vuota', 'Nuova scheda', null);
+	hudCaret.classList.add('open');
 }
 function addTab(type, label, loaderFn) {
     const id = `tab-${type}-${++tabCounter}`;
