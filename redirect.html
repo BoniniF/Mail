@@ -451,12 +451,15 @@ function renderTabs() {
 
 
 function showDropdown() {
-      repositionCatcher();
-      userDropdown.style.display = 'block';
-      userDropdown.style.opacity = '1';
-      userDropdown.style.pointerEvents = 'auto';
-      userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
-    }
+    repositionDropdown();
+    const userDropdown = document.getElementById('user-dropdown');
+    if (!userDropdown) return;
+    userDropdown.style.display = 'block';
+    userDropdown.style.opacity = '1';
+    userDropdown.style.pointerEvents = 'auto';
+    userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+}
+	window.showDropdown = showDropdown;
 	
 function openTabSelector() {
     addTab('vuota', 'Nuova scheda', null);
@@ -557,7 +560,7 @@ function patchHudLogin(username) {
 
 let dropdownPinned = false;
     // esponi in globale:
-    window.showDropdown = showDropdown;
+    
     window.hideDropdown = hideDropdown;
     window.repositionCatcher = repositionCatcher;
 
