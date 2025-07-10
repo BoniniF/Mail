@@ -266,12 +266,15 @@ align-items: center;
 }
 
 #hud-caret {
-  margin-left: 10px;
   font-size: 0.7em;
   user-select: none;
   transition: transform 0.18s;
   color: #013220;
   cursor: pointer;
+	top: 41px;
+left: 50%;
+position: fixed;
+z-index: 30000;
 }
 #hud-caret.open {
   transform: rotate(180deg);
@@ -517,7 +520,7 @@ function patchHudLogin(username) {
   if (hudDiv && hudCaret && hudName) {
     hudName.textContent = username;
     hudDiv.style.display = 'block';
-    hudCaret.textContent = '▲';
+  //  hudCaret.textContent = '▲';
     hudCaret.classList.remove('open');
 
 	   setupHudDropdownEvents();
@@ -546,7 +549,7 @@ function patchHudLogin(username) {
     userDropdown.style.pointerEvents = 'none';
     userDropdown.style.transform = 'translateX(-50%) scale(.4)';
     hudCaret.classList.remove('open');
- hudCaret.textContent = '▲';
+// hudCaret.textContent = '▲';
   }
 
   catcher.addEventListener('mouseenter', () => {
@@ -603,7 +606,7 @@ function patchHudLogin(username) {
     userDropdown.style.opacity = '0';
     userDropdown.style.pointerEvents = 'none';
     userDropdown.style.transform = 'translateX(-50%) scale(.4)';
-    hudCaret.classList.remove('open');  hudCaret.textContent = '▲';
+    hudCaret.classList.remove('open');// hudCaret.textContent = '▲';
     dropdownPinned = false;
 }
 
