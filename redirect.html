@@ -429,7 +429,9 @@ const tabs = [
     }
 ];
 let tabCounter = 1;
+  const hudCaret = document.getElementById('hud-caret');
 
+	
 function renderTabs() {
     const bar = document.getElementById('tabs-bar');
     bar.innerHTML = '';
@@ -525,7 +527,6 @@ document.getElementById('login-form').onsubmit = async function(e) {
 function patchHudLogin(username) {
   const hudDiv = document.getElementById('hud-username');
   const hudName = document.getElementById('hud-username-text');
-  const hudCaret = document.getElementById('hud-caret');
   if (hudDiv && hudCaret && hudName) {
     hudName.textContent = username;
     hudDiv.style.display = 'block';
@@ -539,7 +540,6 @@ function patchHudLogin(username) {
 
 	function setupHudDropdownEvents() {
   const hudUsername = document.getElementById('hud-username');
-  const hudCaret = document.getElementById('hud-caret');
   const userDropdown = document.getElementById('user-dropdown');
   const catcher = document.getElementById('hud-click-catcher');
   let dropdownPinned = false;
