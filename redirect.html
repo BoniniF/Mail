@@ -530,15 +530,13 @@ function patchHudLogin(username) {
   }
 }
 
-
-	function setupHudDropdownEvents() {
-  const hudUsername = document.getElementById('hud-username');
+const hudUsername = document.getElementById('hud-username');
   const hudCaret = document.getElementById('hud-caret');
   const userDropdown = document.getElementById('user-dropdown');
   const catcher = document.getElementById('hud-click-catcher');
   let dropdownPinned = false;
-
-  function showDropdown() {
+	
+function showDropdown() {
     repositionDropdown();
     userDropdown.style.display = 'block';
     userDropdown.style.opacity = '1';
@@ -554,6 +552,11 @@ function patchHudLogin(username) {
     hudCaret.classList.remove('open');
 // hudCaret.textContent = '▲';
   }
+	
+	function setupHudDropdownEvents() {
+  
+
+  
 
   catcher.addEventListener('mouseenter', () => {
     if (!dropdownPinned) showDropdown();
