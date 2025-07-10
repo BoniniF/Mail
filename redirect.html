@@ -460,6 +460,9 @@ function renderTabs() {
 	
 function openTabSelector() {
     addTab('vuota', 'Nuova scheda', null);
+	 if (typeof setupHudDropdownEvents === 'function') {
+        setupHudDropdownEvents(); // Assicurati che gli eventi siano impostati
+    }
 	showDropdown()
 	hudCaret.classList.add('open');
 }
