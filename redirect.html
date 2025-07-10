@@ -446,7 +446,13 @@ function renderTabs() {
 }
 
 
-
+function showDropdown() {
+      repositionCatcher();
+      userDropdown.style.display = 'block';
+      userDropdown.style.opacity = '1';
+      userDropdown.style.pointerEvents = 'auto';
+      userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+    }
 	
 function openTabSelector() {
     addTab('vuota', 'Nuova scheda', null);
@@ -532,13 +538,7 @@ function patchHudLogin(username) {
     const catcher = document.getElementById('hud-click-catcher');
     let dropdownPinned = false;
 
-    function showDropdown() {
-      repositionCatcher();
-      userDropdown.style.display = 'block';
-      userDropdown.style.opacity = '1';
-      userDropdown.style.pointerEvents = 'auto';
-      userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
-    }
+    
     function hideDropdown() { /* … */ }
     function repositionCatcher() { /* … */ }
 
@@ -547,15 +547,6 @@ function patchHudLogin(username) {
     window.hideDropdown = hideDropdown;
     window.repositionCatcher = repositionCatcher;
 
-  
-	
-function showDropdown() {
-    repositionDropdown();
-    userDropdown.style.display = 'block';
-    userDropdown.style.opacity = '1';
-    userDropdown.style.pointerEvents = 'auto';
-    userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
-  }
 
   function hideDropdown() {
     userDropdown.style.display = 'none';
