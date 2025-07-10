@@ -522,7 +522,7 @@ function patchHudLogin(username) {
     hudName.textContent = username;
     hudDiv.style.display = 'block';
   //  hudCaret.textContent = '▲';
-    hudCaret.classList.remove('open');
+ hudCaret.classList.add('open');
 
 	   setupHudDropdownEvents();
   }
