@@ -448,7 +448,13 @@ function renderTabs() {
 }
 
 
-
+  function showDropdown() {
+    repositionDropdown();
+    userDropdown.style.display = 'block';
+    userDropdown.style.opacity = '1';
+    userDropdown.style.pointerEvents = 'auto';
+    userDropdown.style.transform = 'translateX(-50%) scaleY(1)';
+  }
 	
 function openTabSelector() {
     addTab('vuota', 'Nuova scheda', null);
