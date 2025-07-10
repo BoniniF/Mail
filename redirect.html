@@ -460,12 +460,18 @@ function renderTabs() {
 	
 function openTabSelector() {
     addTab('vuota', 'Nuova scheda', null);
-	 if (typeof setupHudDropdownEvents === 'function') {
-        setupHudDropdownEvents(); // Assicurati che gli eventi siano impostati
+
+    // Forza visualizzazione header utente
+    const hudDiv = document.getElementById('hud-username');
+    if (hudDiv && hudDiv.style.display === 'none') {
+        hudDiv.style.display = 'block';
+        setupHudDropdownEvents(); // per sicurezza
     }
-	showDropdown()
-	hudCaret.classList.add('open');
+
+    showDropdown();
+    hudCaret.classList.add('open');
 }
+	
 function addTab(type, label, loaderFn) {
     const id = `tab-${type}-${++tabCounter}`;
     tabs.push({ id, type, label, loader: loaderFn, loaded: false });
