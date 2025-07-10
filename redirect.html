@@ -385,7 +385,13 @@ z-index: 30000;
 <!-- Bulk actions UI -->
 <div id="bulk-actions" style="display:none;">
     <input type="checkbox" id="select_all" /> <label for="select_all"><strong>Seleziona/Deseleziona tutte</strong></label>
-    <button onclick="deleteSelectedEmails()">Elimina selezionate</button>
+    <button onclick="deleteSelectedEmails()" style="background:none; border:none; padding:0; cursor:pointer;">
+  <svg id="elrE79f4Ln61" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+    viewBox="0 0 24 24" shape-rendering="geometricPrecision"
+    text-rendering="geometricPrecision">
+    <path d="M5.755,20.283L4,8h16L18.245,20.283c.169082,1.017279-.040965,1.81995-1.98,1.717h-8.53c-1.304862.100763-2.237178-.445096-1.98-1.717ZM20.735,5.122501h-5v-1c0-.552285-.447715-1-1-1-1.720507.603057-4.215847.490823-6,0-.552285,0-1,.447715-1,1v1h-4.430668c-.552285,0-1.231885.447715-1.231885,1s.110268,1,.662553,1h18c.830233,0,.757771-.40248.75777-1s-.75777-1-.75777-1Z" transform="matrix(.781315 0 0 1.069778 2.62422-1.437749)" fill="#fefffe"/>
+   </svg>
+</button>
     <button onclick="downloadSelectedEmails('html')">Scarica HTML selezionate</button>
     <span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
     <button onclick="saveSelectedToAccount()">Salva selezionate su account</button>
