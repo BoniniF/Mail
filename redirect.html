@@ -293,6 +293,45 @@ z-index: 30000;
   cursor: pointer;
 }
 
+
+
+	    /* Stile uniforme verde */
+.email-checkbox,
+#select_all {
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid #148735; /* Verde scuro */
+    background-color: #e8f5ec; /* Verde chiaro pastello */
+    position: relative;
+    cursor: pointer;
+}
+
+.email-checkbox:hover,
+#select_all:hover {
+   border-color:#36A750; 
+   box-shadow:
+      0px 3px 10px rgba(20,135,53,.13),
+      inset -1rem .7rem -.9rem rgba(255,255,255,.07);
+}
+
+/* Quando sono CHECKED cambia molto bene!*/
+.email-checkbox:checked,
+#select_all:checked {
+     background-color:#148735 !important;        /* Fondo pieno verde acceso */
+     border-color:#013220 !important ;           /* Bordino più scuro ancora*/
+}
+/* Tick custom bianco sopra fondo checked */
+
+.email-checkbox::after,
+#select_all::after {
+ content:"";
+ display:block;
+ width:.45em;height:.85em;border-left:.17em solid white;border-bottom:.17em solid white;margin-left:.65em;margin-top:-0.1em;-webkit-transform-origin:left top;-moz-transform-origin:left top;-ms-transform-origin:left top;-o-transform-origin:left top;transform-origin:left top;-webkit-transform :rotate(-48deg) scale(.84);-moz-transform :rotate(-48deg) scale(.84);-ms-transform :rotate(-48deg) scale(.84);-o-transform :rotate(-48deg) scale(.84);transform : rotate(-47deg)scale(.89);
+ opacity:.0;}
+/* Mostra tick SOLO quando checkata! */
+.email-checkbox:checked::after,#select_all.checked::after {opacity:.99;}
         
     </style>
 </head>
