@@ -468,6 +468,7 @@ function renderTabs() {
     const plus = document.createElement('button');
     plus.textContent = '+';
     plus.className = 'tab-btn';
+	plus.setAttribute('style', 'border-radius: 50px; padding: 12px 17px;');
     plus.onclick = openTabSelector;
     bar.appendChild(plus);
 }
