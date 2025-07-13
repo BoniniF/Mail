@@ -76,14 +76,14 @@
 }
 #bulk-actions button {
     background: #013220;
-    color: #fff;
-    border: none;
-    border-radius: 7px;
-    padding: 7px 18px;
-    margin: 0 7px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background 0.2s, color 0.15s, box-shadow .25s;
+color: #fff;
+border: none;
+border-radius: 13px;
+padding: 7px 18px;
+margin: 0 7px;
+cursor: pointer;
+font-size: 1em;
+transition: background 0.2s, color 0.15s, box-shadow .25s;
 }
 #bulk-actions button:hover {
     box-shadow:
@@ -433,7 +433,7 @@ z-index: 30000;
 </button><button onclick="saveSelectedToAccount()">
 <svg width="30" height="30" id=" e7zbkyrw6en1" =""="" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 20 20" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" project-id="4f709533c4484b02aa5f98dafaafc88f" export-id="e91b11be34064bfab9ff6803544926fa" cached="false"><ellipse rx="3.163772" ry="3.101737" transform="matrix(1 0 0 0.663878 6.184864 17.419543)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.753101" ry="3.808933" transform="matrix(1.016529 0 0 0.663878 13.163772 16.950051)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.877172" ry="3.808933" transform="matrix(1 0 0 0.448104 9.255587 15.712745)" fill="#fff" stroke-width="0"></ellipse><rect width="7.444174" height="3.101737" rx="0" ry="0" transform="matrix(1 0 0 0.663878 6.091815 17.419543)" fill="#fff" stroke-width="0"></rect><ellipse rx="3.163772" ry="3.101737" transform="translate(6.091815 6.253102)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.753101" ry="3.808933" transform="matrix(1.016529 0 0 1 13.070723 5.545906)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.877172" ry="3.808933" transform="translate(9.193551 3.808933)" fill="#fff" stroke-width="0"></ellipse><rect width="7.444174" height="3.101737" rx="0" ry="0" transform="translate(6.091815 6.253103)" fill="#fff" stroke-width="0"></rect><ellipse rx="2.931143" ry="2.865605" transform="matrix(1 0 0 1.168855 9.813902 5.545906)" fill="#013220" stroke-width="0"></ellipse><g transform="matrix(.359802 0 0 0.357315 6.40198 1.736973)"><g transform="translate(-140-7559)"><g transform="translate(56 160)"><path d="M94,7399c5.523,0,10,4.59,10,10.253c0,4.529-2.862,8.371-6.833,9.728-.507.101-.687-.219-.687-.492c0-.338.012-1.442.012-2.814c0-.956-.32-1.58-.679-1.898c2.227-.254,4.567-1.121,4.567-5.059c0-1.12-.388-2.034-1.03-2.752.104-.259.447-1.302-.098-2.714c0,0-.838-.275-2.747,1.051-.799-.227-1.655-.341-2.505-.345-.85.004-1.705.118-2.503.345-1.911-1.326-2.751-1.051-2.751-1.051-.543,1.412-.2,2.455-.097,2.714-.639.718-1.03,1.632-1.03,2.752c0,3.928,2.335,4.808,4.556,5.067-.286.256-.545.708-.635,1.371-.57.262-2.018.715-2.91-.852c0,0-.529-.985-1.533-1.057c0,0-.975-.013-.068.623c0,0,.655.315,1.11,1.5c0,0,.587,1.83,3.369,1.21.005.857.014,1.665.014,1.909c0,.271-.184.588-.683.493-.663294-.226161-1.295694-.521662-1.889034-.878119-.072779-.043724.7229.519328,2.808665.930011c3.450978.67949,8.792921,1.362293,7.493369,1.285856-.292285-.017191-1.949128-.014745-2.772.000004c0,.069394-2.48-.000004-2.48-.000004s9.827597,7.001547,9.827597,7.001547-7.322597-.000001-7.322597-.000001s0,10.792016,0,10.792015-5.008,0-5.008,0s0-10.792015,0-10.792015-7.497001-.000001-7.497,0s10-7.001543,10-7.001542-3.161,0-3.161,0-4.084059.07764-4.167561-.000004c-.212576-.19766.195301-3.875194,0-4.090745C85.013664,7414.399347,84,7411.94753,84,7409.253C84,7403.59,88.478,7399,94,7399" fill="#fff" fill-rule="evenodd"></path></g></g></g>
 </svg></button>
-<span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;">Selezionate: 50</span>
+<span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
 <div></div></div>
 
 
@@ -1149,7 +1149,7 @@ function renderBulkActions() {
         checkboxes.length > 0 &&
         [...checkboxes].every(cb => cb.checked)
     );
-    selectedCountSpan.textContent = selectedEmails.size > 0 ? `Selezionate: ${selectedEmails.size}` : '';
+    selectedCountSpan.textContent = selectedEmails.size > 0 ? `> ${selectedEmails.size}` : '';
 }
 document.getElementById('select_all').addEventListener('change', function () {
     const checkboxes = document.querySelectorAll('.email-checkbox');
