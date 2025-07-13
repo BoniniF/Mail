@@ -1126,7 +1126,7 @@ function renderBulkActions() {
         checkboxes.length > 0 &&
         [...checkboxes].every(cb => cb.checked)
     );
-    selectedCountSpan.textContent = selectedEmails.size > 0 ? `> ${selectedEmails.size}` : '';
+    selectedCountSpan.textContent = selectedEmails.size > 0 ? ` ${selectedEmails.size}` : '';
 }
 document.getElementById('select_all').addEventListener('change', function () {
     const checkboxes = document.querySelectorAll('.email-checkbox');
