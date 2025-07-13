@@ -355,50 +355,18 @@ z-index: 30000;
         </button>
     </form>
 </div>
-<div id="hud-click-catcher"></div>
-	   <span id="hud-caret";">▲</span>
-<div id="hud-username" style="
-    display:none;
-    position:fixed;
-    top:0;
-    left:50%;
-    transform:translateX(-50%);
-    background: rgba(255,255,255,0.3);
-    color:#013220; 
-    padding:8px 22px 12px 22px;
-    border-radius:0 0 25px 25px;
-    box-shadow:0 2px 12px rgba(0,0,0,.14);
-    backdrop-filter:blur(4px); 
-    -webkit-backdrop-filter:blur(4px);
-    font-size:2em; 
-    z-index:10000;">
-    <span id="hud-username-text"></span>
+<div id="hud-click-catcher" style="top: 0px; left: 584.733px; width: 152.533px; height: 58px;"></div>
+	   <span id="hud-caret" ;"="" class="open">▼</span>
+<div id="hud-username" style="display: block; position: fixed; top: 0px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.3); color: rgb(1, 50, 32); padding: 8px 22px 12px; border-radius: 0px 0px 25px 25px; box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 12px; backdrop-filter: blur(4px); font-size: 2em; z-index: 10000;">
+    <span id="hud-username-text">BoniniF</span>
   
 </div>
-    <div id="user-dropdown" style="background: rgba(255,255,255,0.3);
-    color:#013220; 
-    padding:8px 22px 12px 22px;
-    border-radius:0 0 25px 25px;
-    box-shadow:0 2px 12px rgba(0,0,0,.14);
-    backdrop-filter:blur(4px); 
-    -webkit-backdrop-filter:blur(4px);
-    font-size:0.3em;">
+    <div id="user-dropdown" style="background: rgba(255, 255, 255, 0.3); color: rgb(1, 50, 32); padding: 8px 22px 12px; border-radius: 0px 0px 25px 25px; box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 12px; backdrop-filter: blur(4px); font-size: 0.3em; position: fixed; left: 661px; top: 61px; transform: translateX(-50%); display: block; opacity: 1; pointer-events: auto;">
         <div class="dropdown-buttons">
-    <div class="g_id_signin"
-         data-type="standard"
-         data-shape="rectangular"
-         data-theme="outline"
-         data-text="signin_with"
-         data-size="large">
-    </div>
-        <button id="outlook_login" style="display: flex; align-items: center; gap: 8px;">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg/32px-Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg.png"alt="" width="24" height="24">Accedi con Outlook</button>
-    <div id="g_id_onload"
-         data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
+    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signin_with" data-size="large"><div class="S9gUrf-YoZ4jf" style="position: relative;"><div></div><div id="gsi_483288_670378-wrapper" class="L5Fo6c-sM5MNb" style="width: fit-content;"><iframe src="https://accounts.google.com/gsi/button?type=standard&amp;shape=rectangular&amp;theme=outline&amp;text=signin_with&amp;size=large&amp;is_fedcm_supported=false&amp;client_id=956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com&amp;iframe_id=gsi_483288_670378&amp;cas=jv%2F0ykIgrPpxFuw%2BLlQkn5uxH3oOeCjYkfyQGA4JCYw" class="L5Fo6c-PQbLGe" allow="identity-credentials-get" id="gsi_483288_670378" title="Pulsante Accedi con Google" style="display: block; position: relative; top: 0px; left: 0px; height: 44px; width: 262px; border: 0px none; margin: -2px -10px;" tabindex="-1"></iframe><div class="L5Fo6c-bF1uUb" id="gsi_483288_670378-overlay" aria-label="Accedi con Google. Si apre in una nuova scheda" role="button" tabindex="0"></div></div></div></div>
+        <button id="outlook_login" style="display: flex; align-items: center; gap: 8px;font-size: 3em;">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg/32px-Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg.png" alt="" width="24" height="24">Accedi con Outlook</button>
+    <div id="g_id_onload" data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com" data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="false">
     </div>
 </div>
     </div>
@@ -407,11 +375,11 @@ z-index: 30000;
 <!-- IMAP/Other Email Services -->
 <h2>Altri servizi email (IMAP)</h2>
 <form id="imap-login-form" style="margin-bottom: 20px;">
-    <label>Email: <input type="email" id="imap-email" required></label>
-    <label>Password: <input type="password" id="imap-password" required></label>
-    <label>Server IMAP: <input type="text" id="imap-host" placeholder="es. imap.libero.it" required></label>
+    <label>Email: <input type="email" id="imap-email" required=""></label>
+    <label>Password: <input type="password" id="imap-password" required=""></label>
+    <label>Server IMAP: <input type="text" id="imap-host" placeholder="es. imap.libero.it" required=""></label>
     <label>Porta: <input type="number" id="imap-port" value="993"></label>
-    <label>TLS: <input type="checkbox" id="imap-tls" checked></label>
+    <label>TLS: <input type="checkbox" id="imap-tls" checked=""></label>
     <button type="submit">Connetti</button>
 </form>
 <div id="imap-content"></div>
@@ -422,9 +390,12 @@ z-index: 30000;
 </div>
 
 <!-- Bulk actions UI -->
+<div id="bulk-actions" style="display: block;left: 65%;z-index: 10001;margin-bottom: 3%;">
+<span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
+</div>
 <div id="bulk-actions" style="display: block;">
-    <input type="checkbox" id="select_all">
-    <button onclick="deleteSelectedEmails()" style="    ">
+  
+    <input type="checkbox" id="select_all" style="top: -26%;left: -10%;"><button onclick="deleteSelectedEmails()" style="    ">
   <svg width="30" height="30" id="elrE79f4Ln61" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" shape-rendering="geometricPrecision" text-rendering="geometricPrecision">
     <path d="M5.755,20.283L4,8h16L18.245,20.283c.169082,1.017279-.040965,1.81995-1.98,1.717h-8.53c-1.304862.100763-2.237178-.445096-1.98-1.717ZM20.735,5.122501h-5v-1c0-.552285-.447715-1-1-1-1.720507.603057-4.215847.490823-6,0-.552285,0-1,.447715-1,1v1h-4.430668c-.552285,0-1.231885.447715-1.231885,1s.110268,1,.662553,1h18c.830233,0,.757771-.40248.75777-1s-.75777-1-.75777-1Z" transform="matrix(.781315 0 0 1.069778 2.62422-1.437749)" fill="#fefffe"></path>
    </svg>
@@ -433,8 +404,7 @@ z-index: 30000;
 </button><button onclick="saveSelectedToAccount()">
 <svg width="30" height="30" id=" e7zbkyrw6en1" =""="" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 20 20" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" project-id="4f709533c4484b02aa5f98dafaafc88f" export-id="e91b11be34064bfab9ff6803544926fa" cached="false"><ellipse rx="3.163772" ry="3.101737" transform="matrix(1 0 0 0.663878 6.184864 17.419543)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.753101" ry="3.808933" transform="matrix(1.016529 0 0 0.663878 13.163772 16.950051)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.877172" ry="3.808933" transform="matrix(1 0 0 0.448104 9.255587 15.712745)" fill="#fff" stroke-width="0"></ellipse><rect width="7.444174" height="3.101737" rx="0" ry="0" transform="matrix(1 0 0 0.663878 6.091815 17.419543)" fill="#fff" stroke-width="0"></rect><ellipse rx="3.163772" ry="3.101737" transform="translate(6.091815 6.253102)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.753101" ry="3.808933" transform="matrix(1.016529 0 0 1 13.070723 5.545906)" fill="#fff" stroke-width="0"></ellipse><ellipse rx="3.877172" ry="3.808933" transform="translate(9.193551 3.808933)" fill="#fff" stroke-width="0"></ellipse><rect width="7.444174" height="3.101737" rx="0" ry="0" transform="translate(6.091815 6.253103)" fill="#fff" stroke-width="0"></rect><ellipse rx="2.931143" ry="2.865605" transform="matrix(1 0 0 1.168855 9.813902 5.545906)" fill="#013220" stroke-width="0"></ellipse><g transform="matrix(.359802 0 0 0.357315 6.40198 1.736973)"><g transform="translate(-140-7559)"><g transform="translate(56 160)"><path d="M94,7399c5.523,0,10,4.59,10,10.253c0,4.529-2.862,8.371-6.833,9.728-.507.101-.687-.219-.687-.492c0-.338.012-1.442.012-2.814c0-.956-.32-1.58-.679-1.898c2.227-.254,4.567-1.121,4.567-5.059c0-1.12-.388-2.034-1.03-2.752.104-.259.447-1.302-.098-2.714c0,0-.838-.275-2.747,1.051-.799-.227-1.655-.341-2.505-.345-.85.004-1.705.118-2.503.345-1.911-1.326-2.751-1.051-2.751-1.051-.543,1.412-.2,2.455-.097,2.714-.639.718-1.03,1.632-1.03,2.752c0,3.928,2.335,4.808,4.556,5.067-.286.256-.545.708-.635,1.371-.57.262-2.018.715-2.91-.852c0,0-.529-.985-1.533-1.057c0,0-.975-.013-.068.623c0,0,.655.315,1.11,1.5c0,0,.587,1.83,3.369,1.21.005.857.014,1.665.014,1.909c0,.271-.184.588-.683.493-.663294-.226161-1.295694-.521662-1.889034-.878119-.072779-.043724.7229.519328,2.808665.930011c3.450978.67949,8.792921,1.362293,7.493369,1.285856-.292285-.017191-1.949128-.014745-2.772.000004c0,.069394-2.48-.000004-2.48-.000004s9.827597,7.001547,9.827597,7.001547-7.322597-.000001-7.322597-.000001s0,10.792016,0,10.792015-5.008,0-5.008,0s0-10.792015,0-10.792015-7.497001-.000001-7.497,0s10-7.001543,10-7.001542-3.161,0-3.161,0-4.084059.07764-4.167561-.000004c-.212576-.19766.195301-3.875194,0-4.090745C85.013664,7414.399347,84,7411.94753,84,7409.253C84,7403.59,88.478,7399,94,7399" fill="#fff" fill-rule="evenodd"></path></g></g></g>
 </svg></button>
-<span id="selected-count" style="margin-left:15px;color:#148735;font-weight:bold;"></span>
-<div></div></div>
+</div>
 
 
 
