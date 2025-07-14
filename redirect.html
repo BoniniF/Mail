@@ -572,7 +572,14 @@ function patchHudLogin(username) {
   }
 }
 
-
+function toggleAdditionalMenu() {
+   const menu = document.getElementById('additional-menu');
+   if(menu.style.display === 'none') {
+      menu.style.display = 'block';
+   } else {
+      menu.style.display = 'none';
+   }
+}
 	function setupHudDropdownEvents() {
   const hudUsername = document.getElementById('hud-username');
   const userDropdown = document.getElementById('user-dropdown');
