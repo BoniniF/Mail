@@ -102,11 +102,7 @@ transition: background 0.2s, color 0.15s, box-shadow .25s;
     margin-right: 15px;
     font-weight: 600;
 }
-#bulk-actions input[type="checkbox"] {
-    margin-right: 6px;
-    transform: scale(1.2);
-    accent-color: #357AE8;
-}
+
 #selected-count {
     color: #148735;
     font-weight: bold;
@@ -302,14 +298,11 @@ z-index: 30000;
 
 
 	    /* Stile uniforme verde */
-.email-checkbox,
-#select_all {
+.email-checkbox, #select_all {
     appearance: none;
     width: 22px;
     height: 22px;
     border-radius: 6px;
-    border: 2px solid #148735; /* Verde scuro */
-    background-color: #e8f5ec; /* Verde chiaro pastello */
     position: relative;
     cursor: pointer;
 }
@@ -338,7 +331,16 @@ z-index: 30000;
  opacity:.0;}
 /* Mostra tick SOLO quando checkata! */
 .email-checkbox:checked::after,#select_all.checked::after {opacity:.99;}
-        
+
+	    .email-checkbox, #select_all {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgb(1, 50, 32);
+}
     </style>
 </head>
 <body>
