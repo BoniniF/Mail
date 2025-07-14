@@ -572,14 +572,35 @@ function patchHudLogin(username) {
   }
 }
 
-function toggleAdditionalMenu() {
-   const menu = document.getElementById('additional-menu');
-   if(menu.style.display === 'none') {
-      menu.style.display = 'block';
-   } else {
-      menu.style.display = 'none';
-   }
-}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const openSideMenuBtn = document.getElementById('open_side_menu');
+    const closeSideMenuBtn = document.getElementById('close_side_menu');
+    const sideMenu = document.getElementById('side-menu');
+    const userDropdown = document.getElementById('user-dropdown');
+
+    if (openSideMenuBtn && closeSideMenuBtn && sideMenu && userDropdown) {
+        openSideMenuBtn.addEventListener('click', function() {
+            sideMenu.style.left = '0'; // Sposta il menù a sinistra
+            userDropdown.style.overflow = 'visible'; // Assicurati che non venga tagliato
+            // Opzionale: regolare la larghezza del dropdown principale se il menù laterale è dentro di esso
+            // userDropdown.style.width = 'calc(var(--original-user-dropdown-width) + 180px)'; // Se avevi una larghezza fissa
+        });
+
+        closeSideMenuBtn.addEventListener('click', function() {
+            sideMenu.style.left = '-200px'; // Nasconde il menù riportandolo a sinistra
+            // Opzionale: ripristinare la larghezza del dropdown principale
+            // userDropdown.style.width = 'var(--original-user-dropdown-width)';
+        });
+    }
+
+    // Aggiungi un click handler per chiudere il menù se si clicca fuori (opzionale ma consigliato)
+    document.addEventListener('click', function(event) {
+        if (!userDropdown.contains(event.target) && sideMenu.style.left === '0px') {
+            sideMenu.style.left = '-200px';
+        }
+    });
+});
 	function setupHudDropdownEvents() {
   const hudUsername = document.getElementById('hud-username');
   const userDropdown = document.getElementById('user-dropdown');
