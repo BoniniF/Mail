@@ -350,19 +350,18 @@ z-index: 30000;
 
 <div id="hud-click-catcher" style="top: 0px; left: 584.733px; width: 152.533px; height: 58px;"></div>
 	   <span id="hud-caret" ;"="" class="open">▼</span>
-<div id="hud-username" style="display: block; position: fixed; top: 0px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.3); color: rgb(1, 50, 32); padding: 8px 22px 12px; border-radius: 0px 0px 25px 25px; box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 12px; backdrop-filter: blur(4px); font-size: 2em; z-index: 10000;">
-    <span id="hud-username-text">BoniniF</span>
-  
+<div id="hud-username" style="display: none; position: fixed; top: 0px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.3); color: rgb(1, 50, 32); padding: 8px 22px 12px; border-radius: 0px 0px 25px 25px; box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 12px; backdrop-filter: blur(4px); font-size: 2em; z-index: 10000;">
+    <span id="hud-username-text">Accesso richiesto</span>
 </div>
-    <div id="user-dropdown" style="background: rgba(255, 255, 255, 0.3); color: rgb(1, 50, 32); padding: 8px 22px 12px; border-radius: 25px 25px 14px 14px; box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 12px; backdrop-filter: blur(4px); font-size: 0.3em; position: fixed; left: 661px; top: 61px; transform: translateX(-50%); display: block; opacity: 1; pointer-events: auto;">
-        <div class="dropdown-buttons">
-    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signin_with" data-size="large"><div class="S9gUrf-YoZ4jf" style="position: relative;"><div></div><div id="gsi_483288_670378-wrapper" class="L5Fo6c-sM5MNb" style="width: fit-content;"><iframe src="https://accounts.google.com/gsi/button?type=standard&amp;shape=rectangular&amp;theme=outline&amp;text=signin_with&amp;size=large&amp;is_fedcm_supported=false&amp;client_id=956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com&amp;iframe_id=gsi_483288_670378&amp;cas=jv%2F0ykIgrPpxFuw%2BLlQkn5uxH3oOeCjYkfyQGA4JCYw" class="L5Fo6c-PQbLGe" allow="identity-credentials-get" id="gsi_483288_670378" title="Pulsante Accedi con Google" style="display: block; position: relative; top: 0px; left: 0px; height: 44px; width: 262px; border: 0px none; margin: -2px -10px;" tabindex="-1"></iframe><div class="L5Fo6c-bF1uUb" id="gsi_483288_670378-overlay" aria-label="Accedi con Google. Si apre in una nuova scheda" role="button" tabindex="0"></div></div></div></div>
-        <button id="outlook_login" style="display: flex; align-items: center; gap: 8px;font-size: 3em;">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg/32px-Microsoft_Office_Outlook_%282018%E2%80%93present%29.svg.png" alt="" width="24" height="24">Outlook</button>
-    <div id="g_id_onload" data-client_id="956804490330-vbmql3c07lr9eqejk11eaiipc76cefdd.apps.googleusercontent.com" data-context="signin" data-ux_mode="popup" data-callback="handleCredentialResponse" data-auto_prompt="false">
+<div id="user-dropdown" style="display: none; background: rgba(255, 255, 255, 0.3); color: rgb(1, 50, 32); padding: 8px 22px 12px; border-radius: 25px 25px 14px 14px; box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 12px; backdrop-filter: blur(4px); font-size: 0.3em; position: fixed; left: 661px; top: 61px; transform: translateX(-50%);">
+    <div class="dropdown-buttons">
+        <!-- Pulsante GitHub -->
+        <button id="github_login" style="font-size: 1.5em; background: #24292e; color: white;">
+            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            Accedi con GitHub
+        </button>
     </div>
 </div>
-    </div>
 
 
 <!-- IMAP/Other Email Services 
@@ -504,56 +503,20 @@ function selectTab(tabId) {
     }
 }
 window.addEventListener('DOMContentLoaded', function() {
-if (localStorage.getItem('mail_authenticated') === '1' && localStorage.getItem('mail_user')) {
-    username = mail_user = localStorage.getItem('mail_user');
-    document.getElementById('login-popup')?.remove();
-    patchHudLogin(username);
+    // Rimuovi il controllo su localStorage.getItem('mail_authenticated')
+    // Non rimuovere il login-popup perché è già stato eliminato dall'HTML
     renderTabs();
     selectTab(tabs[0].id);
-} else {
-        renderTabs();
-    }
 });
-document.getElementById('login-form').onsubmit = async function(e) {
-    e.preventDefault();
-    username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-    try {
-        const res = await fetch('./login.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username, password})
-        });
-        const result = await res.json();
-        if (result.status && (result.status === "success" || result.status === "created")) {
-            localStorage.setItem('mail_user', username);
-            localStorage.setItem('mail_authenticated', '1');
-            window.USERNAME = username;
-            mail_user = username;
-            const hudDiv = document.getElementById('hud-username');
-           if(hudDiv) {
-    patchHudLogin(username);
-}
-            document.getElementById('login-popup')?.remove();
-            renderTabs();
-            selectTab(tabs[0].id);
-        } else {
-            alert(result.error || "Errore di autenticazione.");
-        }
-    } catch (err) {
-        alert("Errore durante il login: " + err);
-    }
-};
+
 function patchHudLogin(username) {
   const hudDiv = document.getElementById('hud-username');
   const hudName = document.getElementById('hud-username-text');
   if (hudDiv && hudCaret && hudName) {
     hudName.textContent = username;
-    hudDiv.style.display = 'block';
-  //  hudCaret.textContent = '▲';
- hudCaret.classList.add('open');
-
-	   setupHudDropdownEvents();
+    hudDiv.style.display = 'block'; // Mostra l'HUD solo ora
+    hudCaret.classList.add('open');
+    setupHudDropdownEvents();
   }
 }
 
@@ -678,16 +641,7 @@ window.handleCredentialResponse = function(response) {
         gmailTokenLoaded = true;
         localStorage.setItem('gmail_access_token', resp.access_token);
         // Salva anche su backend, opzionale
-        if (mail_user) {
-            fetch('./update_token.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: mail_user,
-                    gmail_token: resp.access_token
-                })
-            }).catch(err => console.error("Errore aggiornamento token Gmail:", err));
-        }
+       
         // Promuovi la scheda vuota a Gmail
         const activeTab = tabs.find(t => t.active && t.type === 'vuota');
         if (activeTab) {
@@ -1022,7 +976,79 @@ output.push(`
 }
     
 // Espansione/collapse per Outlook e Gmail  <div class="email-body"></div>
-    
+
+document.getElementById('github_login').onclick = async function() {
+    // Reindirizza l'utente alla pagina di autorizzazione di GitHub
+    const clientId = 'YOUR_GITHUB_CLIENT_ID'; // Da sostituire con il tuo ID
+    const redirectUri = encodeURIComponent('https://bonini.hstn.me/mail'); // L'URL di callback
+    const scope = 'repo'; // Permette di creare repository privati
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+    window.location.href = authUrl;
+};
+	// Questo codice dovrebbe essere eseguito quando la pagina viene caricata dopo il redirect da GitHub
+async function handleGitHubCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (!code) return; // Nessun codice, non è un callback
+
+    try {
+        // Scambia il codice con un token di accesso
+        // NOTA: Questa chiamata dovrebbe idealmente essere fatta dal backend per nascondere il client_secret.
+        // Per questa demo, lo facciamo dal frontend, ma è INSECURE.
+        const response = await fetch('https://cors-anywhere.herokuapp.com/https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'BoniniF-Mail-Storage'
+            },
+            body: JSON.stringify({
+                client_id: 'YOUR_GITHUB_CLIENT_ID',
+                client_secret: 'YOUR_GITHUB_CLIENT_SECRET', // DA NASCONDERE!
+                code: code
+            })
+        });
+        const data = await response.json();
+        const accessToken = data.access_token;
+
+        if (accessToken) {
+            // Salva il token in localStorage
+            localStorage.setItem('github_access_token', accessToken);
+
+            // Ottieni il nome utente GitHub
+            const userResponse = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${accessToken}`
+                }
+            });
+            const userData = await userResponse.json();
+            const githubUsername = userData.login;
+
+            // Salva il nome utente
+            localStorage.setItem('github_username', githubUsername);
+
+            // Aggiorna l'interfaccia
+            patchHudLogin(githubUsername);
+
+            // Pulisci l'URL dai parametri
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            alert('Accesso a GitHub effettuato con successo!');
+        } else {
+            throw new Error('Token non ricevuto');
+        }
+    } catch (error) {
+        console.error('Errore durante l\'accesso a GitHub:', error);
+        alert('Errore durante l\'accesso a GitHub. Riprova.');
+    }
+}
+
+// Chiama la funzione di gestione del callback all'avvio
+window.addEventListener('DOMContentLoaded', function() {
+    handleGitHubCallback();
+    renderTabs();
+    selectTab(tabs[0].id);
+});
 window.expandCollapseEmail = function(divId, el) {
     const bodyDiv = document.getElementById(divId).querySelector('.email-body');
     if (bodyDiv.style.display !== 'none') {
@@ -1213,23 +1239,83 @@ async function saveEmailToAccount(filename, divId) {
         await expandEmail(divId.replace('email-', ''), filename);
     }
     const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
-    const username = localStorage.getItem('mail_user');
-    if (!username) {
-        alert("Login richiesto");
+
+    // Verifica l'autenticazione GitHub
+    const githubToken = localStorage.getItem('github_access_token');
+    const githubUsername = localStorage.getItem('github_username');
+
+    if (!githubToken || !githubUsername) {
+        alert("Per salvare un'email, devi prima accedere con GitHub.");
+        // Mostra il dropdown per l'accesso
+        showDropdown();
+        hudCaret.classList.add('open');
         return;
     }
 
-    const res = await fetch('./save_html.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, filename, html})
-    });
+    try {
+        // 1. Verifica se il repository "mail-private" esiste
+        let repoExists = false;
+        try {
+            const repoCheck = await fetch(`https://api.github.com/repos/${githubUsername}/mail-private`, {
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            repoExists = repoCheck.ok;
+        } catch (e) {
+            console.log("Errore nel controllo del repo:", e);
+        }
 
-    const data = await res.json();
-    if (data.success) {
-        alert('Mail salvata con successo.');
-    } else {
-        alert('Errore salvataggio: ' + (data.message || ''));
+        // 2. Se non esiste, crealo
+        if (!repoExists) {
+            const createRepoResponse = await fetch('https://api.github.com/user/repos', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: 'mail-private',
+                    description: 'Archivio email privato',
+                    private: true
+                })
+            });
+
+            if (!createRepoResponse.ok) {
+                throw new Error('Impossibile creare il repository su GitHub.');
+            }
+        }
+
+        // 3. Salva il file nel repository
+        // Il percorso del file nel repo sarà: `emails/${filename}.html`
+        const filePath = `emails/${filename}.html`;
+        const contentBase64 = btoa(unescape(encodeURIComponent(
+            `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${html}</body></html>`
+        )));
+
+        const saveFileResponse = await fetch(`https://api.github.com/repos/${githubUsername}/mail-private/contents/${filePath}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${githubToken}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: `Salvataggio email: ${filename}`,
+                content: contentBase64
+            })
+        });
+
+        if (saveFileResponse.ok) {
+            alert('Mail salvata con successo su GitHub!');
+        } else {
+            throw new Error('Errore durante il salvataggio su GitHub.');
+        }
+    } catch (error) {
+        console.error('Errore:', error);
+        alert('Errore salvataggio: ' + error.message);
     }
 }
 window.saveEmailToAccount = saveEmailToAccount;
