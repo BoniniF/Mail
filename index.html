@@ -348,6 +348,24 @@ z-index: 30000;
 </head>
 <body>
 
+<div id="login-popup" style="position:fixed;top:0;left:0;width:100%;height:100%;background:;z-index:9999;display:flex;justify-content:center;align-items:center;">
+    <form id="login-form" style="background:rgba(255,255,255,0.3); padding:30px; border-radius:35px; box-shadow:0 0 10px rgba(0,0,0,0.2); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);">
+        <h2 style="color:#013220;">Login</h2>
+        <input type="text" id="username" placeholder="Username" required style="background:rgba(255,255,255,0.5); border:none; padding:8px; border-radius:4px; color:#013220; margin-bottom:10px;"><br>
+        <input type="password" id="password" placeholder="Password" required style="background:rgba(255,255,255,0.5); border:none; padding:8px; border-radius:4px; color:#013220; margin-bottom:20px;"><br>
+        <button 
+            type="submit"
+            style="
+                background:#013220;
+                color:#fff;
+                border:none;
+                padding:7px 15px;
+                border-radius:6px;
+                cursor:pointer;font-size:23px;
+                display:block;margin-left:auto;margin-right:auto;">⇮
+        </button>
+    </form>
+</div>
 <div id="hud-click-catcher" style="top: 0px; left: 584.733px; width: 152.533px; height: 58px;"></div>
 	   <span id="hud-caret" ;"="" class="open">▼</span>
 <div id="hud-username" style="display: block; position: fixed; top: 0px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.3); color: rgb(1, 50, 32); padding: 8px 22px 12px; border-radius: 0px 0px 25px 25px; box-shadow: rgba(0, 0, 0, 0.14) 0px 2px 12px; backdrop-filter: blur(4px); font-size: 2em; z-index: 10000;">
@@ -470,23 +488,17 @@ function renderTabs() {
   }
 	
 function openTabSelector() {
-    // Mostra popup/modal/scelta
-    const modal = document.createElement('div');
-    modal.innerHTML = `
-      <div style="...">Scegli un servizio:
-        <button id="choose-gmail">Gmail</button>
-        <button id="choose-outlook">Outlook</button>
-      </div>`;
-    document.body.appendChild(modal);
+    addTab('vuota', 'Nuova scheda', null);
 
-    modal.querySelector('#choose-gmail').onclick = () => {
-      addTab('gmail', 'Gmail', loadGmailTab);
-      document.body.removeChild(modal);
-    };
-    modal.querySelector('#choose-outlook').onclick = () => {
-      addTab('outlook', 'Outlook', loadOutlookTab);
-      document.body.removeChild(modal);
-    };
+    // Forza visualizzazione header utente
+    const hudDiv = document.getElementById('hud-username');
+    if (hudDiv && hudDiv.style.display === 'none') {
+        hudDiv.style.display = 'block';
+        setupHudDropdownEvents(); // per sicurezza
+    }
+
+    showDropdown();
+    hudCaret.classList.add('open');
 }
 	
 function addTab(type, label, loaderFn) {
@@ -845,8 +857,7 @@ window.gisLoaded = function() {
 async function loadArchivioTab(tab, container) {
     const contentId = tab.id + '-content';
     container.innerHTML = `<div id="${contentId}"></div>`;
-    // Carica da github!
-    await loadGithubArchivedEmails(contentId);
+    await loadSavedEmails(contentId);
 }
 async function loadSavedEmails(containerId = 'tab-archivio-content') {
     const div = document.getElementById(containerId);
