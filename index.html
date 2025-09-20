@@ -459,6 +459,52 @@ const tabs = [
 let tabCounter = 1;
   const hudCaret = document.getElementById('hud-caret');
 
+	const GITHUB_CLIENT_ID = "IL_TUO_CLIENT_ID";
+const GITHUB_REDIRECT_URI = window.location.origin + "/"; 
+let githubToken = null;
+
+async function loginGithub() {
+  const state = Math.random().toString(36).substring(2);
+  const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=repo&state=${state}`;
+  window.location.href = url;
+}
+
+// Al ritorno dal redirect
+async function handleGithubCallback() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("code")) {
+    const code = params.get("code");
+    // SCAMBIO code → access_token con il tuo backend piccolo proxy
+    const res = await fetch("./github_oauth.php", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({code})
+    });
+    const data = await res.json();
+    githubToken = data.access_token;
+    localStorage.setItem("github_token", githubToken);
+  }
+}
+handleGithubCallback();
+
+	async function ensureMailRepo() {
+  const res = await fetch("https://api.github.com/user/repos", {
+    headers: {Authorization: "token " + githubToken}
+  });
+  const repos = await res.json();
+  if (!repos.find(r => r.name === "MailStorage")) {
+    await fetch("https://api.github.com/user/repos", {
+      method: "POST",
+      headers: {
+        Authorization: "token " + githubToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({name: "MailStorage", auto_init: true, private: true})
+    });
+  }
+}
+
+	
 	
 function renderTabs() {
     const bar = document.getElementById('tabs-bar');
@@ -1224,32 +1270,22 @@ function getSelectedEmailIds() {
         return Array.from(selectedEmails);
     }
 
-async function saveEmailToAccount(filename, divId) {
-    const bodyDiv = document.getElementById(divId).querySelector('.email-body');
-    if (!bodyDiv.innerHTML || bodyDiv.style.display === 'none') {
-        // Espandi prima
-        await expandEmail(divId.replace('email-', ''), filename);
-    }
-    const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
-    const username = localStorage.getItem('mail_user');
-    if (!username) {
-        alert("Login richiesto");
-        return;
-    }
-
-    const res = await fetch('./save_html.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, filename, html})
-    });
-
-    const data = await res.json();
-    if (data.success) {
-        alert('Mail salvata con successo.');
-    } else {
-        alert('Errore salvataggio: ' + (data.message || ''));
-    }
+async function loadSavedEmails(containerId) {
+  if (!githubToken) {
+    document.getElementById(containerId).innerHTML = "Login GitHub richiesto.";
+    return;
+  }
+  const userRes = await fetch("https://api.github.com/user", {
+    headers: {Authorization: "token " + githubToken}
+  });
+  const user = await userRes.json();
+  const res = await fetch(`https://api.github.com/repos/${user.login}/MailStorage/contents`, {
+    headers: {Authorization: "token " + githubToken}
+  });
+  const files = await res.json();
+  // genera lista come ora usando files[].name e files[].download_url
 }
+
 window.saveEmailToAccount = saveEmailToAccount;
     
 async function saveSelectedToAccount() {
