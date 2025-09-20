@@ -973,11 +973,7 @@ window.gisLoaded = function() {
 }
 
 // ARCHIVIO
-async function loadArchivioTab(tab, container) {
-    const contentId = tab.id + '-content';
-    container.innerHTML = `<div id="${contentId}"></div>`;
-    await loadSavedEmails(contentId);
-}
+
 
 window.expandCollapseSaved = async function(filename, fileId, el) {
     const username = localStorage.getItem('mail_user');
