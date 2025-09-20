@@ -459,6 +459,47 @@ const tabs = [
 let tabCounter = 1;
   const hudCaret = document.getElementById('hud-caret');
 
+
+// Gestione del reindirizzamento OAuth
+window.addEventListener('load', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code) {
+        // Scambia il codice con un access token tramite il backend (PHP)
+        const tokenResponse = await fetch('/exchange_code.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+
+        const data = await tokenResponse.json();
+        if (data.access_token) {
+            localStorage.setItem('github_access_token', data.access_token);
+
+            // Recupera il nome utente e salva nel localStorage
+            const userResponse = await fetch('https://api.github.com/user', {
+                headers: { Authorization: `Bearer ${data.access_token}` }
+            });
+
+            const user = await userResponse.json();
+            localStorage.setItem('github_username', user.login);
+
+            // Recupera i dati temporanei e completa il processo di salvataggio
+            const tempData = JSON.parse(localStorage.getItem('temp_email_data'));
+            if (tempData) {
+                await saveEmailToGithub(tempData.filename, tempData.html, data.access_token);
+                localStorage.removeItem('temp_email_data'); // Pulisce i dati temporanei
+            }
+
+            // Rimuove il parametro `code` dalla URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            alert('Errore durante l\'autenticazione.');
+        }
+    }
+});
+	
 	
 function renderTabs() {
     const bar = document.getElementById('tabs-bar');
