@@ -404,7 +404,6 @@ z-index: 30000;
 <div id="bulk-actions" style="display: block; left: 60%; z-index: 10001; margin-bottom: 2.5%; padding: 9px 12px 16px 33px;">
 <span id="selected-count" style="margin-left:-15px;color:#013220;font-weight:bold;">50</span>
 </div>
-<div id="bulk-actions" style="display: block;">
   
     <input type="checkbox" id="select_all" style="top: -26%;left: -10%;"><button onclick="deleteSelectedEmails()" style="    ">
   <svg width="30" height="30" id="elrE79f4Ln61" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" shape-rendering="geometricPrecision" text-rendering="geometricPrecision">
@@ -459,6 +458,123 @@ const tabs = [
 let tabCounter = 1;
   const hudCaret = document.getElementById('hud-caret');
 
+
+
+const GITHUB_CLIENT_ID = "Ov23lizLjuvUovxtvQJh";
+const GITHUB_REDIRECT_URI = window.location.origin + window.location.pathname;
+let githubToken = localStorage.getItem("github_token") || null;
+let githubUser = null;
+
+async function loginGithub() {
+  const state = Math.random().toString(36).substring(2);
+  const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=repo&state=${state}`;
+  window.location.href = url;
+}
+
+async function handleGithubCallback() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("code")) {
+    const code = params.get("code");
+    const res = await fetch("./github_oauth.php", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({code})
+    });
+    const data = await res.json();
+    githubToken = data.access_token;
+    localStorage.setItem("github_token", githubToken);
+    history.replaceState({}, document.title, GITHUB_REDIRECT_URI); // pulisce URL
+  }
+}
+handleGithubCallback();
+
+async function getGithubUser() {
+  if (!githubToken) return null;
+  if (githubUser) return githubUser;
+  const res = await fetch("https://api.github.com/user", {
+    headers: {Authorization: "token " + githubToken}
+  });
+  githubUser = await res.json();
+  return githubUser;
+}
+
+async function ensureMailRepo() {
+  const user = await getGithubUser();
+  const res = await fetch("https://api.github.com/user/repos", {
+    headers: {Authorization: "token " + githubToken}
+  });
+  const repos = await res.json();
+  if (!repos.find(r => r.name === "MailStorage")) {
+    await fetch("https://api.github.com/user/repos", {
+      method: "POST",
+      headers: {
+        Authorization: "token " + githubToken,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: "MailStorage",
+        auto_init: true,
+        private: true
+      })
+    });
+  }
+  return user.login;
+}
+
+async function saveEmailToAccount(filename, divId) {
+  if (!githubToken) {
+    alert("Devi fare login con GitHub!");
+    return loginGithub();
+  }
+  const login = await ensureMailRepo();
+
+  const bodyDiv = document.getElementById(divId).querySelector(".email-body");
+  const html = `<html><head><meta charset="UTF-8"></head><body>${bodyDiv.innerHTML}</body></html>`;
+  const b64 = btoa(unescape(encodeURIComponent(html)));
+
+  const url = `https://api.github.com/repos/${login}/MailStorage/contents/${filename}.html`;
+  await fetch(url, {
+    method: "PUT",
+    headers: {
+      Authorization: "token " + githubToken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: "Save email " + filename,
+      content: b64
+    })
+  });
+  alert("Email salvata nel tuo repo MailStorage!");
+}
+
+async function loadSavedEmails(containerId = "tab-archivio-content") {
+  const div = document.getElementById(containerId);
+  if (!githubToken) {
+    div.innerHTML = "Devi fare login GitHub.";
+    return;
+  }
+  const user = await getGithubUser();
+  const res = await fetch(`https://api.github.com/repos/${user.login}/MailStorage/contents`, {
+    headers: {Authorization: "token " + githubToken}
+  });
+  const files = await res.json();
+  if (!Array.isArray(files) || files.length === 0) {
+    div.innerHTML = "Nessuna email salvata.";
+    return;
+  }
+  let html = "";
+  for (const file of files) {
+    html += `
+      <div class="email">
+        <strong>${file.name}</strong><br>
+        <a href="${file.download_url}" target="_blank">Apri</a>
+      </div>`;
+  }
+  div.innerHTML = html;
+}
+
+
+	
 	
 function renderTabs() {
     const bar = document.getElementById('tabs-bar');
@@ -822,19 +938,6 @@ function exportSingleToHTML(divId, filename) {
     link.download = filename + ".html";
     link.click();
 }
-
-// Funzione di export singolo (come nel tuo codice)
-function exportSingleToHTML(divId, filename) {
-    const div = document.getElementById(divId);
-    if (!div) return;
-    const bodyDiv = div.querySelector('.email-body');
-    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename + ".html";
-    link.click();
-}
 window.downloadSelectedEmails = downloadSelectedEmails;
     
 async function initializeGapiClient() {
@@ -854,45 +957,8 @@ window.gisLoaded = function() {
 }
 
 // ARCHIVIO
-async function loadArchivioTab(tab, container) {
-    const contentId = tab.id + '-content';
-    container.innerHTML = `<div id="${contentId}"></div>`;
-    await loadSavedEmails(contentId);
-}
-async function loadSavedEmails(containerId = 'tab-archivio-content') {
-    const div = document.getElementById(containerId);
-    const user = localStorage.getItem('mail_user');
-    if (!user) { div.innerHTML = "Login richiesto."; return; }
-    const res = await fetch('./mail_storage_api.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ action: 'list', username: user })
-    });
-    const files = await res.json();
-    if (!Array.isArray(files) || files.length === 0) {
-        div.innerHTML = "Nessun archivio salvato.";
-        return;
-    }
-    let html = '';
-    for (const file of files) {
-        const fileId = 'saved-' + file.name.replace(/[^a-z0-9\-_]/gi, '_');
-        const meta = parseStorageFilename(file.name);
-html += `
-    <div class="email" id="${fileId}">
-        <strong>Oggetto:</strong> ${meta.subject}<br>
-        <strong>Data:</strong> ${meta.date}<br>
-        <strong>Da:</strong> ${meta.from}<br>
-        <span class="expand-collapse" onclick="expandCollapseSaved('${file.name}', '${fileId}', this)" aria-expanded="false">▶</span>
-        <div class="email-body"></div>
-        <div>
-            <button onclick="exportSavedToHTML('${file.name}', '${fileId}')">Scarica HTML</button>
-            <button onclick="deleteSavedEmail('${file.name}', '${fileId}')">Elimina</button>
-        </div>
-    </div>
-        `;
-    }
-    div.innerHTML = html;
-}
+
+
 window.expandCollapseSaved = async function(filename, fileId, el) {
     const username = localStorage.getItem('mail_user');
     const div = document.getElementById(fileId);
@@ -1080,16 +1146,7 @@ window.expandCollapseGmail = async function(msgId, el, filename) {
     bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
     bodyDiv.style.display = 'block';
 };
-window.exportGmailToHTML = function(divId, filename) {
-    const div = document.getElementById(divId);
-    const bodyDiv = div.querySelector('.email-body');
-    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
-    const blob = new Blob([htmlContent], {type: "text/html"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename + ".html";
-    link.click();
-};
+
 
 // Bulk actions (valide per TUTTE le tab: tutte le checkbox sono .email-checkbox ovunque)
 function onEmailCheckboxChange(checkbox) {
@@ -1224,32 +1281,8 @@ function getSelectedEmailIds() {
         return Array.from(selectedEmails);
     }
 
-async function saveEmailToAccount(filename, divId) {
-    const bodyDiv = document.getElementById(divId).querySelector('.email-body');
-    if (!bodyDiv.innerHTML || bodyDiv.style.display === 'none') {
-        // Espandi prima
-        await expandEmail(divId.replace('email-', ''), filename);
-    }
-    const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
-    const username = localStorage.getItem('mail_user');
-    if (!username) {
-        alert("Login richiesto");
-        return;
-    }
 
-    const res = await fetch('./save_html.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, filename, html})
-    });
 
-    const data = await res.json();
-    if (data.success) {
-        alert('Mail salvata con successo.');
-    } else {
-        alert('Errore salvataggio: ' + (data.message || ''));
-    }
-}
 window.saveEmailToAccount = saveEmailToAccount;
     
 async function saveSelectedToAccount() {
