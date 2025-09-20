@@ -573,22 +573,6 @@ async function loadSavedEmails(containerId = "tab-archivio-content") {
   div.innerHTML = html;
 }
 
-	async function ensureMailRepo() {
-  const res = await fetch("https://api.github.com/user/repos", {
-    headers: {Authorization: "token " + githubToken}
-  });
-  const repos = await res.json();
-  if (!repos.find(r => r.name === "MailStorage")) {
-    await fetch("https://api.github.com/user/repos", {
-      method: "POST",
-      headers: {
-        Authorization: "token " + githubToken,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({name: "MailStorage", auto_init: true, private: true})
-    });
-  }
-}
 
 	
 	
@@ -1162,16 +1146,7 @@ window.expandCollapseGmail = async function(msgId, el, filename) {
     bodyDiv.innerHTML = html || '<i>Nessun contenuto</i>';
     bodyDiv.style.display = 'block';
 };
-window.exportGmailToHTML = function(divId, filename) {
-    const div = document.getElementById(divId);
-    const bodyDiv = div.querySelector('.email-body');
-    const htmlContent = `<html><head><meta charset="UTF-8"><title>${filename}</title></head><body>${bodyDiv.innerHTML}</body></html>`;
-    const blob = new Blob([htmlContent], {type: "text/html"});
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename + ".html";
-    link.click();
-};
+
 
 // Bulk actions (valide per TUTTE le tab: tutte le checkbox sono .email-checkbox ovunque)
 function onEmailCheckboxChange(checkbox) {
@@ -1306,21 +1281,7 @@ function getSelectedEmailIds() {
         return Array.from(selectedEmails);
     }
 
-async function loadSavedEmails(containerId) {
-  if (!githubToken) {
-    document.getElementById(containerId).innerHTML = "Login GitHub richiesto.";
-    return;
-  }
-  const userRes = await fetch("https://api.github.com/user", {
-    headers: {Authorization: "token " + githubToken}
-  });
-  const user = await userRes.json();
-  const res = await fetch(`https://api.github.com/repos/${user.login}/MailStorage/contents`, {
-    headers: {Authorization: "token " + githubToken}
-  });
-  const files = await res.json();
-  // genera lista come ora usando files[].name e files[].download_url
-}
+
 
 window.saveEmailToAccount = saveEmailToAccount;
     
