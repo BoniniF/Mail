@@ -1223,33 +1223,111 @@ function escapeHtml(text) {
 function getSelectedEmailIds() {
         return Array.from(selectedEmails);
     }
-
 async function saveEmailToAccount(filename, divId) {
-    const bodyDiv = document.getElementById(divId).querySelector('.email-body');
-    if (!bodyDiv.innerHTML || bodyDiv.style.display === 'none') {
-        // Espandi prima
-        await expandEmail(divId.replace('email-', ''), filename);
-    }
-    const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
-    const username = localStorage.getItem('mail_user');
-    if (!username) {
-        alert("Login richiesto");
-        return;
-    }
+            const bodyDiv = document.getElementById(divId).querySelector('.email-body');
+            if (!bodyDiv.innerHTML || bodyDiv.style.display === 'none') {
+                // Espandi prima
+                await expandEmail(divId.replace('email-', ''), filename);
+            }
 
-    const res = await fetch('./save_html.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, filename, html})
-    });
+            const html = document.getElementById(divId).querySelector('.email-body').innerHTML;
 
-    const data = await res.json();
-    if (data.success) {
-        alert('Mail salvata con successo.');
-    } else {
-        alert('Errore salvataggio: ' + (data.message || ''));
-    }
-}
+            let accessToken = localStorage.getItem('github_access_token');
+
+            // Se non c'è il token, avvia il flusso OAuth
+            if (!accessToken) {
+                const clientId = 'TUO_CLIENT_ID'; // Inserisci il client ID della tua GitHub OAuth App
+                const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname); // Reindirizza alla stessa pagina
+                const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=repo&redirect_uri=${redirectUri}`;
+                window.location.href = oauthUrl;
+                return; // Interrompe l'esecuzione per il login
+            }
+
+            // Salva l'email nel repository
+            const username = localStorage.getItem('github_username');
+            if (!username) {
+                alert("Errore: nome utente GitHub non trovato.");
+                return;
+            }
+
+            const repoName = 'MailStorage';
+            const savePath = `emails/${filename}.html`;
+
+            const success = await saveFileToGithub(repoName, savePath, html, accessToken);
+
+            if (success) {
+                alert('Mail salvata con successo.');
+            } else {
+                alert('Errore durante il salvataggio della mail.');
+            }
+        }
+
+        // Funzione per salvare un file su GitHub
+        async function saveFileToGithub(repoName, path, content, token) {
+            const apiUrl = `https://api.github.com/repos/${localStorage.getItem('github_username')}/${repoName}/contents/${path}`;
+            const fileContent = btoa(content); // Codifica in base64
+
+            // Controlla se il file esiste già (per ottenere lo SHA)
+            const shaResponse = await fetch(apiUrl, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const shaData = await shaResponse.json();
+            const sha = shaResponse.status === 200 ? shaData.sha : null;
+
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: 'Salvataggio email',
+                    content: fileContent,
+                    sha: sha || undefined
+                })
+            });
+
+            return response.status === 201 || response.status === 200; // Stato 201 (creato) o 200 (aggiornato)
+        }
+
+        // Gestione del reindirizzamento OAuth
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+
+            if (code) {
+                // Scambia il codice con un access token tramite il backend (PHP)
+                fetch('/exchange_code.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.access_token) {
+                            localStorage.setItem('github_access_token', data.access_token);
+
+                            // Recupera il nome utente e salva nel localStorage
+                            fetch('https://api.github.com/user', {
+                                headers: { Authorization: `Bearer ${data.access_token}` }
+                            })
+                                .then(res => res.json())
+                                .then(user => {
+                                    localStorage.setItem('github_username', user.login);
+                                    alert('Login effettuato con successo.');
+                                    // Ricarica la pagina per rimuovere il parametro `code`
+                                    window.location.href = window.location.pathname;
+                                });
+                        } else {
+                            alert('Errore durante l\'autenticazione.');
+                        }
+                    });
+            }
+        });
 window.saveEmailToAccount = saveEmailToAccount;
     
 async function saveSelectedToAccount() {
