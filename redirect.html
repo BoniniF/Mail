@@ -1236,7 +1236,7 @@ async function saveEmailToAccount(filename, divId) {
 
             // Se non c'è il token, avvia il flusso OAuth
             if (!accessToken) {
-                const clientId = 'TUO_CLIENT_ID'; // Inserisci il client ID della tua GitHub OAuth App
+                const clientId = 'Ov23lizLjuvUovxtvQJh'; // Inserisci il client ID della tua GitHub OAuth App
                 const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname); // Reindirizza alla stessa pagina
                 const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=repo&redirect_uri=${redirectUri}`;
                 window.location.href = oauthUrl;
