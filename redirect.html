@@ -1280,8 +1280,8 @@ async function saveEmailToAccount(filename, divId) {
         // Salva i dati temporanei per continuare il processo dopo il login
         localStorage.setItem('temp_email_data', JSON.stringify({ filename, divId, html }));
 
-        const clientId = 'Ov23lizLjuvUovxtvQJh'; // Inserisci il client ID della tua GitHub OAuth App
-        const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname); // Reindirizza alla stessa pagina
+        const clientId = 'TUO_CLIENT_ID'; // Inserisci il client ID della tua GitHub OAuth App
+        const redirectUri = encodeURIComponent(window.location.origin + '/redirect.html'); // Reindirizza alla pagina esterna
         const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=repo&redirect_uri=${redirectUri}`;
         window.location.href = oauthUrl; // Reindirizza per il login
         return; // Interrompe l'esecuzione per gestire il login
@@ -1346,41 +1346,12 @@ async function saveFileToGithub(repoName, path, content, token) {
         // Gestione del reindirizzamento OAuth
 // Gestione del reindirizzamento OAuth
 window.addEventListener('load', async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
+    const tempData = JSON.parse(localStorage.getItem('temp_email_data'));
+    const accessToken = localStorage.getItem('github_access_token');
 
-    if (code) {
-        // Scambia il codice con un access token tramite il backend (PHP)
-        const tokenResponse = await fetch('/exchange_code.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code })
-        });
-
-        const data = await tokenResponse.json();
-        if (data.access_token) {
-            localStorage.setItem('github_access_token', data.access_token);
-
-            // Recupera il nome utente e salva nel localStorage
-            const userResponse = await fetch('https://api.github.com/user', {
-                headers: { Authorization: `Bearer ${data.access_token}` }
-            });
-
-            const user = await userResponse.json();
-            localStorage.setItem('github_username', user.login);
-
-            // Recupera i dati temporanei e completa il processo di salvataggio
-            const tempData = JSON.parse(localStorage.getItem('temp_email_data'));
-            if (tempData) {
-                await saveEmailToGithub(tempData.filename, tempData.html, data.access_token);
-                localStorage.removeItem('temp_email_data'); // Pulisce i dati temporanei
-            }
-
-            // Rimuove il parametro `code` dalla URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-            alert('Errore durante l\'autenticazione.');
-        }
+    if (tempData && accessToken) {
+        await saveEmailToGithub(tempData.filename, tempData.html, accessToken);
+        localStorage.removeItem('temp_email_data'); // Pulisce i dati temporanei
     }
 });
 window.saveEmailToAccount = saveEmailToAccount;
