@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8" />
-    <title>BoniniF mail storage</title>
+    <title>FBoniniF mail storage</title>
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     <style>
         body {
@@ -1281,7 +1281,7 @@ async function saveEmailToAccount(filename, divId) {
         localStorage.setItem('temp_email_data', JSON.stringify({ filename, divId, html }));
 
         const clientId = 'Ov23lizLjuvUovxtvQJh'; // Inserisci il client ID della tua GitHub OAuth App
-        const redirectUri = encodeURIComponent(window.location.origin + '/redirect.html'); // Reindirizza alla pagina esterna
+        const redirectUri = 'https://bonini.ct.ws/mail/redirect.html'; // Reindirizza alla pagina esterna
         const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=repo&redirect_uri=${redirectUri}`;
         window.location.href = oauthUrl; // Reindirizza per il login
         return; // Interrompe l'esecuzione per gestire il login
